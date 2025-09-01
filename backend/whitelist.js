@@ -1,17 +1,9 @@
 // College WiFi IP Whitelist
-// Add your college's WiFi IP addresses here
-// You can get these by connecting to your college WiFi and checking your IP
+// Only this specific IP address is allowed
 
 const WHITELISTED_IPS = [
-  // Example IPs - Replace with your actual college WiFi IPs
-  '192.168.1.0/24',        // Example: 192.168.1.x range
-  '10.0.0.0/8',            // Example: 10.x.x.x range
-  '172.16.0.0/12',         // Example: 172.16-31.x.x range
-  
-  // Add your specific college WiFi IPs here:
-  // '192.168.100.0/24',   // Your college WiFi subnet
-  // '10.10.50.0/24',      // Another college network
-  // '172.20.0.0/16',      // College admin network
+  // Only allow this specific IP address
+  '117.232.140.181',
   
   // For testing on localhost (remove in production)
   '127.0.0.1',
