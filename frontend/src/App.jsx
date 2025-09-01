@@ -371,10 +371,12 @@ function App() {
                 </div>
 
                 {/* Interest Setup Card */}
-                <div className={`p-10 rounded-3xl shadow-2xl ${
-                  isDarkMode ? 'bg-gray-900 border border-gray-800' : 'bg-white border border-gray-100'
-                } animate-fade-in-up`}>
-                  <h2 className={`text-3xl font-bold mb-8 ${
+                <div className={`w-full max-w-2xl p-10 rounded-3xl border-2 transition-all duration-300 ${
+                  isDarkMode
+                    ? 'bg-black border-gray-700 shadow-2xl shadow-white/5'
+                    : 'bg-white border-gray-200 shadow-2xl shadow-black/10'
+                }`}>
+                  <h2 className={`text-3xl font-bold text-center mb-8 ${
                     isDarkMode ? 'text-white' : 'text-black'
                   }`}>
                     Add Your Interests
