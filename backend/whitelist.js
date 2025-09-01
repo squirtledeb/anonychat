@@ -5,6 +5,10 @@ const WHITELISTED_IPS = [
   // Only allow this specific IP address
   '117.232.140.181',
   
+  // TEMPORARILY ALLOW ALL IPs FOR TESTING
+  // Remove this line once IP detection is working
+  'ALLOW_ALL',
+  
   // For testing on localhost (remove in production)
   '127.0.0.1',
   '::1',
@@ -13,6 +17,12 @@ const WHITELISTED_IPS = [
 
 // IP validation function
 function isIPWhitelisted(clientIP) {
+  // TEMPORARILY ALLOW ALL IPs FOR TESTING
+  if (WHITELISTED_IPS.includes('ALLOW_ALL')) {
+    console.log(`TEMP: Allowing all IPs for testing. Client IP: ${clientIP}`);
+    return true;
+  }
+  
   // Handle IPv6 localhost
   if (clientIP === '::1' || clientIP === 'localhost') {
     return true;

@@ -16,19 +16,48 @@ const io = socketIo(server, {
 
 // IP restriction middleware
 const checkIPAccess = (req, res, next) => {
-  const clientIP = req.ip || req.connection.remoteAddress || req.socket.remoteAddress || req.connection.socket?.remoteAddress;
+  // Try multiple ways to get the real client IP
+  let clientIP = req.headers['x-forwarded-for'] || 
+                 req.headers['x-real-ip'] || 
+                 req.headers['x-client-ip'] ||
+                 req.connection.remoteAddress || 
+                 req.socket.remoteAddress || 
+                 req.connection.socket?.remoteAddress ||
+                 req.ip;
+  
+  // If x-forwarded-for contains multiple IPs, take the first one
+  if (clientIP && clientIP.includes(',')) {
+    clientIP = clientIP.split(',')[0].trim();
+  }
   
   // Clean up IP address (remove IPv6 prefix if present)
-  const cleanIP = clientIP.replace(/^::ffff:/, '');
+  const cleanIP = clientIP ? clientIP.replace(/^::ffff:/, '') : 'unknown';
   
-  console.log(`Client IP: ${cleanIP}`);
+  console.log('=== IP ACCESS CHECK ===');
+  console.log(`Raw client IP: ${clientIP}`);
+  console.log(`Clean client IP: ${cleanIP}`);
+  console.log(`Headers:`, {
+    'x-forwarded-for': req.headers['x-forwarded-for'],
+    'x-real-ip': req.headers['x-real-ip'],
+    'x-client-ip': req.headers['x-client-ip']
+  });
+  
+  if (!cleanIP || cleanIP === 'unknown') {
+    console.log('Could not determine client IP, denying access');
+    return res.status(403).json({
+      error: 'Access Denied',
+      message: 'Could not determine client IP address.',
+      clientIP: cleanIP
+    });
+  }
   
   if (!isIPWhitelisted(cleanIP)) {
     console.log(`Access denied for IP: ${cleanIP}`);
     return res.status(403).json({
       error: 'Access Denied',
       message: 'This application is only available from authorized college WiFi networks.',
-      clientIP: cleanIP
+      clientIP: cleanIP,
+      allowedIPs: ['117.232.140.181']
     });
   }
   
@@ -153,6 +182,32 @@ app.get('/health', (req, res) => {
     status: 'ok', 
     waiting: waitingQueue.length, 
     activePairs: Object.keys(activePairs).length / 2 
+  });
+});
+
+// Debug endpoint to check IP detection
+app.get('/debug-ip', (req, res) => {
+  const clientIP = req.headers['x-forwarded-for'] || 
+                   req.headers['x-real-ip'] || 
+                   req.headers['x-client-ip'] ||
+                   req.connection.remoteAddress || 
+                   req.socket.remoteAddress || 
+                   req.connection.socket?.remoteAddress ||
+                   req.ip;
+  
+  const cleanIP = clientIP ? clientIP.replace(/^::ffff:/, '') : 'unknown';
+  const isAllowed = isIPWhitelisted(cleanIP);
+  
+  res.json({
+    rawIP: clientIP,
+    cleanIP: cleanIP,
+    isAllowed: isAllowed,
+    whitelistedIPs: ['117.232.140.181'],
+    headers: {
+      'x-forwarded-for': req.headers['x-forwarded-for'],
+      'x-real-ip': req.headers['x-real-ip'],
+      'x-client-ip': req.headers['x-client-ip']
+    }
   });
 });
 
