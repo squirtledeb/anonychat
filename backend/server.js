@@ -2,6 +2,7 @@ const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
 const cors = require('cors');
+const path = require('path');
 
 const app = express();
 const server = http.createServer(app);
@@ -23,6 +24,9 @@ app.use(express.json());
 const waitingQueue = [];           // Array of userIds waiting to be paired
 const activePairs = {};            // Map: userId -> partnerId
 const sockets = {};                // Map: userId -> socket instance
+
+// Serve static files from the frontend build
+app.use(express.static(path.join(__dirname, '../frontend/dist')));
 
 // Socket.io connection handling
 io.on('connection', (socket) => {
@@ -117,13 +121,18 @@ io.on('connection', (socket) => {
   });
 });
 
-// Health check endpoint
+// API routes
 app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok', 
     waiting: waitingQueue.length, 
     activePairs: Object.keys(activePairs).length / 2 
   });
+});
+
+// Catch-all route: serve the React app for any non-API routes
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/dist/index.html'));
 });
 
 const PORT = process.env.PORT || 3000;
