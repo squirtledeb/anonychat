@@ -186,11 +186,31 @@ function App() {
   const fetchOnlineStats = async () => {
     try {
       const response = await fetch('/api/stats');
+      console.log('Stats response status:', response.status);
+      console.log('Stats response headers:', response.headers);
+      
       if (response.ok) {
-        const stats = await response.json();
-        setOnlineStats(stats);
+        const text = await response.text(); // Get raw response first
+        console.log('Stats response text:', text);
+        
+        try {
+          const stats = JSON.parse(text);
+          console.log('Parsed stats:', stats);
+          setOnlineStats(stats);
+        } catch (parseError) {
+          console.error('Failed to parse stats JSON:', parseError);
+          console.log('Raw response was:', text);
+          // Set default stats if JSON parsing fails
+          setOnlineStats({
+            onlineUsers: 1,
+            waitingUsers: 1,
+            activeChats: 0
+          });
+        }
       } else {
-        console.log('Stats endpoint returned:', response.status);
+        console.log('Stats endpoint returned error status:', response.status);
+        const errorText = await response.text();
+        console.log('Error response:', errorText);
         // Set default stats if API fails
         setOnlineStats({
           onlineUsers: 1, // At least the current user

@@ -14,6 +14,24 @@ const io = socketIo(server, {
   }
 });
 
+// Data structures for managing chat sessions (moved to top)
+const waitingQueue = [];           // Array of userIds waiting to be paired
+const activePairs = {};            // Map: userId -> partnerId
+const sockets = {};                // Map: userId -> socket instance
+const onlineUsers = new Set();     // Set of all online users
+
+// Function to broadcast online stats to all connected users
+const broadcastOnlineStats = () => {
+  const stats = {
+    onlineUsers: onlineUsers.size,
+    waitingUsers: waitingQueue.length,
+    activeChats: Object.keys(activePairs).length / 2
+  };
+  
+  io.emit('online_stats', stats);
+  console.log('Broadcasting stats:', stats);
+};
+
 // IP restriction middleware
 const checkIPAccess = (req, res, next) => {
   // Try multiple ways to get the real client IP
@@ -94,24 +112,6 @@ app.get('/api/stats', (req, res) => {
 
 // Apply IP restriction to main app routes (not API endpoints)
 app.use(checkIPAccess);
-
-// Data structures for managing chat sessions
-const waitingQueue = [];           // Array of userIds waiting to be paired
-const activePairs = {};            // Map: userId -> partnerId
-const sockets = {};                // Map: userId -> socket instance
-const onlineUsers = new Set();     // Set of all online users
-
-// Function to broadcast online stats to all connected users
-const broadcastOnlineStats = () => {
-  const stats = {
-    onlineUsers: onlineUsers.size,
-    waitingUsers: waitingQueue.length,
-    activeChats: Object.keys(activePairs).length / 2
-  };
-  
-  io.emit('online_stats', stats);
-  console.log('Broadcasting stats:', stats);
-};
 
 // Serve static files from the frontend build
 app.use(express.static(path.join(__dirname, '../frontend/dist')));
