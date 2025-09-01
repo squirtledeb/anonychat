@@ -258,7 +258,7 @@ function App() {
                 className={`group relative inline-flex items-center justify-center px-8 sm:px-12 py-4 sm:py-5 text-lg sm:text-xl font-bold rounded-2xl shadow-2xl transition-all duration-300 overflow-hidden transform hover:scale-105 hover-lift ${
                   isConnecting 
                     ? 'bg-gray-400 cursor-not-allowed' 
-                    : 'bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 hover:from-blue-700 hover:via-purple-700 hover:to-pink-700'
+                    : 'bg-blue-600 hover:bg-blue-700'
                 }`}
               >
                 <span className="relative z-10 flex items-center space-x-3 text-white">
@@ -269,14 +269,12 @@ function App() {
                     </>
                   ) : (
                     <>
-                      <span className="animate-float">🚀</span>
                       <span>Start Chatting Now</span>
-                      <span className="animate-float" style={{animationDelay: '0.5s'}}>💬</span>
                     </>
                   )}
                 </span>
                 {!isConnecting && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-pink-600 via-purple-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  <div className="absolute inset-0 bg-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 )}
               </button>
             </div>
