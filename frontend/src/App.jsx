@@ -229,20 +229,20 @@ function App() {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="flex-1 flex items-center justify-center min-h-[calc(100vh-4rem)]">
         {state === STATES.IDLE && (
-          <div className="text-center max-w-4xl mx-auto">
+          <div className="w-full max-w-4xl mx-auto px-4 text-center">
             {/* Hero Section */}
             <div className="mb-16 animate-fade-in-down">
-              <h2 className={`text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-extrabold mb-6 leading-tight text-center ${
+              <h2 className={`text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-extrabold mb-6 leading-tight ${
                 isDarkMode ? 'text-white' : 'text-gray-900'
               }`}>
                 Start Chatting with
-                <span className={`block mt-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-clip-text text-transparent text-center`}>
+                <span className={`block mt-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-clip-text text-transparent`}>
                   Random Strangers
                 </span>
               </h2>
-              <p className={`text-lg sm:text-xl lg:text-2xl max-w-3xl mx-auto leading-relaxed text-center ${
+              <p className={`text-lg sm:text-xl lg:text-2xl max-w-3xl mx-auto leading-relaxed ${
                 isDarkMode ? 'text-gray-300' : 'text-gray-600'
               }`}>
                 Experience the thrill of anonymous conversations. Connect with people from around the world, 
@@ -251,7 +251,7 @@ function App() {
             </div>
 
             {/* CTA Button */}
-            <div className="mb-16 animate-fade-in-up flex justify-center">
+            <div className="mb-16 animate-fade-in-up">
               <button
                 onClick={handleStartChat}
                 disabled={isConnecting}
@@ -280,7 +280,7 @@ function App() {
             </div>
 
             {/* Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-2xl mx-auto justify-items-center">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-2xl mx-auto">
               <div className={`flex items-center justify-center space-x-3 p-4 rounded-xl hover-lift ${
                 isDarkMode ? 'bg-gray-800/50' : 'bg-white/70'
               } backdrop-blur-sm border ${
