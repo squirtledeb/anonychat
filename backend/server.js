@@ -25,7 +25,7 @@ const checkIPAccess = (req, res, next) => {
                  req.connection.socket?.remoteAddress ||
                  req.ip;
   
-  // If x-forwarded-for contains multiple IPs, take the first one
+  // If x-forwarded-for contains multiple IPs, take the first one (the real client IP)
   if (clientIP && clientIP.includes(',')) {
     clientIP = clientIP.split(',')[0].trim();
   }
