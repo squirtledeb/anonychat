@@ -238,7 +238,7 @@ function App() {
                 isDarkMode ? 'text-white' : 'text-gray-900'
               }`}>
                 Start Chatting with
-                <span className={`block mt-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-clip-text text-transparent animate-pulse-glow`}>
+                <span className={`block mt-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-clip-text text-transparent`}>
                   Random Strangers
                 </span>
               </h2>
