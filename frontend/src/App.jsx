@@ -36,6 +36,8 @@ function App() {
     activeChats: 0
   });
   const socketRef = useRef(null);
+  const [interestInput, setInterestInput] = useState('');
+  const [selectedInterests, setSelectedInterests] = useState([]);
 
   // Generate or retrieve userId from localStorage
   useEffect(() => {
@@ -238,6 +240,10 @@ function App() {
   }, []);
 
   const handleStartChat = () => {
+    if (selectedInterests.length === 0) {
+      return; // Don't start if no interests
+    }
+    
     setState(STATES.CONNECTING); // Set state to CONNECTING when button is clicked
     initializeSocket();
   };
@@ -255,6 +261,17 @@ function App() {
       socket.emit('message', { text, userId });
       setMessages((prevMessages) => [...prevMessages, { text, from: 'me', timestamp: Date.now() }]);
     }
+  };
+
+  const addInterest = () => {
+    if (interestInput.trim() && !selectedInterests.includes(interestInput.trim())) {
+      setSelectedInterests([...selectedInterests, interestInput.trim()]);
+      setInterestInput('');
+    }
+  };
+
+  const removeInterest = (index) => {
+    setSelectedInterests(selectedInterests.filter((_, i) => i !== index));
   };
 
   // Cleanup socket on unmount
@@ -338,86 +355,110 @@ function App() {
           {/* Main Content */}
           <main className="flex-1 flex items-center justify-center min-h-[calc(100vh-4rem)]">
             {state === STATES.IDLE && (
-              <div className="w-full max-w-4xl mx-auto px-4 text-center">
-                {/* Hero Section */}
-                <div className="mb-16 animate-fade-in-down">
-                  <h2 className={`text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-extrabold mb-6 leading-tight ${
+              <div className="w-full max-w-2xl mx-auto px-4 text-center">
+                {/* Main Title */}
+                <div className="mb-12 animate-fade-in-down">
+                  <h1 className={`text-5xl sm:text-6xl font-bold mb-4 ${
                     isDarkMode ? 'text-white' : 'text-gray-900'
                   }`}>
-                    Start Chatting with
-                    <span className={`block mt-2 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 bg-clip-text text-transparent`}>
-                      Random Strangers
-                    </span>
-                  </h2>
-                  <p className={`text-lg sm:text-xl lg:text-2xl max-w-3xl mx-auto leading-relaxed ${
+                    Anonymous Chat
+                  </h1>
+                  <p className={`text-lg sm:text-xl ${
                     isDarkMode ? 'text-gray-300' : 'text-gray-600'
                   }`}>
-                    Experience the thrill of anonymous conversations. Connect with people from around the world, 
-                    share thoughts, and make new connections - all without revealing your identity.
+                    Set up your anonymous profile
                   </p>
                 </div>
 
-                {/* CTA Button */}
-                <div className="mb-16 animate-fade-in-up">
+                {/* Interest Setup Card */}
+                <div className={`p-8 rounded-3xl shadow-2xl ${
+                  isDarkMode ? 'bg-gray-800/90' : 'bg-white/90'
+                } backdrop-blur-lg border ${
+                  isDarkMode ? 'border-gray-700' : 'border-gray-200'
+                } animate-fade-in-up`}>
+                  <h2 className={`text-2xl font-semibold mb-6 ${
+                    isDarkMode ? 'text-white' : 'text-gray-800'
+                  }`}>
+                    Add Your Interests
+                  </h2>
+                  
+                  {/* Interest Input */}
+                  <div className="flex space-x-3 mb-8">
+                    <input
+                      type="text"
+                      placeholder="Type an interest..."
+                      value={interestInput}
+                      onChange={(e) => setInterestInput(e.target.value)}
+                      onKeyPress={(e) => e.key === 'Enter' && addInterest()}
+                      className={`flex-1 px-4 py-3 rounded-xl border-2 transition-all duration-200 focus:outline-none focus:ring-2 ${
+                        isDarkMode
+                          ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-purple-500/20'
+                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500/20'
+                      }`}
+                    />
+                    <button
+                      onClick={addInterest}
+                      disabled={!interestInput.trim()}
+                      className={`px-6 py-3 rounded-xl font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
+                        isDarkMode
+                          ? 'bg-gray-600 hover:bg-gray-700 text-white'
+                          : 'bg-gray-500 hover:bg-gray-600 text-white'
+                      }`}
+                    >
+                      Add
+                    </button>
+                  </div>
+
+                  {/* Selected Interests */}
+                  {selectedInterests.length > 0 && (
+                    <div className="mb-8">
+                      <h3 className={`text-lg font-medium mb-4 ${
+                        isDarkMode ? 'text-white' : 'text-gray-800'
+                      }`}>
+                        Your Interests
+                      </h3>
+                      <div className="flex flex-wrap gap-3 justify-center">
+                        {selectedInterests.map((interest, index) => (
+                          <div
+                            key={index}
+                            className={`px-4 py-2 rounded-full flex items-center space-x-2 ${
+                              isDarkMode ? 'bg-purple-600' : 'bg-blue-600'
+                            } text-white`}
+                          >
+                            <span>{interest}</span>
+                            <button
+                              onClick={() => removeInterest(index)}
+                              className="w-5 h-5 rounded-full bg-white/20 hover:bg-white/30 transition-colors flex items-center justify-center"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Instruction */}
+                  <p className={`text-sm mb-8 ${
+                    isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                  }`}>
+                    Add at least one interest to help find compatible chat partners
+                  </p>
+
+                  {/* Start Chat Button */}
                   <button
                     onClick={handleStartChat}
-                    disabled={isConnecting}
-                    className={`group relative inline-flex items-center justify-center px-8 sm:px-12 py-4 sm:py-5 text-lg sm:text-xl font-bold rounded-2xl shadow-2xl transition-all duration-300 overflow-hidden transform hover:scale-105 hover-lift ${
-                      isConnecting 
-                        ? 'bg-gray-400 cursor-not-allowed' 
-                        : 'bg-blue-600 hover:bg-blue-700'
+                    disabled={selectedInterests.length === 0 || isConnecting}
+                    className={`w-full py-4 px-8 rounded-2xl font-bold text-lg transition-all duration-300 ${
+                      selectedInterests.length === 0 || isConnecting
+                        ? 'bg-gray-400 cursor-not-allowed'
+                        : isDarkMode
+                          ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                          : 'bg-blue-600 hover:bg-blue-700 text-white'
                     }`}
                   >
-                    <span className="relative z-10 flex items-center space-x-3 text-white">
-                      {isConnecting ? (
-                        <>
-                          <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          <span>Connecting...</span>
-                        </>
-                      ) : (
-                        <>
-                          <span>Start Chatting Now</span>
-                        </>
-                      )}
-                    </span>
-                    {!isConnecting && (
-                      <div className="absolute inset-0 bg-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                    )}
+                    {isConnecting ? 'Connecting...' : 'Start Chatting'}
                   </button>
-                </div>
-
-                {/* Stats */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-2xl mx-auto">
-                  <div className={`flex items-center justify-center space-x-3 p-4 rounded-xl hover-lift ${
-                    isDarkMode ? 'bg-gray-800/50' : 'bg-white/70'
-                  } backdrop-blur-sm border ${
-                    isDarkMode ? 'border-gray-700' : 'border-gray-200'
-                  } animate-fade-in-left`}>
-                    <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-                    <span className={`text-sm font-medium ${
-                      isDarkMode ? 'text-gray-300' : 'text-gray-700'
-                    }`}>Live connections</span>
-                  </div>
-                  <div className={`flex items-center justify-center space-x-3 p-4 rounded-xl hover-lift ${
-                    isDarkMode ? 'bg-gray-800/50' : 'bg-white/70'
-                  } backdrop-blur-sm border ${
-                    isDarkMode ? 'border-gray-700' : 'border-gray-200'
-                  } animate-fade-in-up`}>
-                    <div className="w-3 h-3 bg-blue-400 rounded-full animate-pulse"></div>
-                    <span className={`text-sm font-medium ${
-                      isDarkMode ? 'text-gray-300' : 'text-gray-700'
-                    }`}>Secure & private</span>
-                  </div>
-                  <div className={`flex items-center justify-center space-x-3 p-4 rounded-xl hover-lift ${
-                    isDarkMode ? 'bg-gray-800/50' : 'bg-white/70'
-                  } backdrop-blur-sm border ${
-                    isDarkMode ? 'border-gray-700' : 'border-gray-200'
-                  } animate-fade-in-right`}>
-                    <div className="w-3 h-3 bg-purple-400 rounded-full animate-pulse"></div>
-                    <span className={`text-sm font-medium ${
-                      isDarkMode ? 'text-gray-300' : 'text-gray-700'
-                    }`}>No registration</span>
-                  </div>
                 </div>
               </div>
             )}
