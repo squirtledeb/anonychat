@@ -121,32 +121,120 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
-      <div className="bg-white shadow-sm border-b">
-        <div className="max-w-4xl mx-auto px-4 py-3">
-          <h1 className="text-2xl font-bold text-gray-800">Anonymous Chat</h1>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50">
+      {/* Header */}
+      <div className="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-200/50 sticky top-0 z-10">
+        <div className="max-w-6xl mx-auto px-4 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center">
+                <span className="text-white font-bold text-xl">💬</span>
+              </div>
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Anonymous Chat
+              </h1>
+            </div>
+            <div className="text-sm text-gray-500">
+              Connect with strangers worldwide
+            </div>
+          </div>
         </div>
       </div>
 
-      <div className="flex-1 max-w-4xl mx-auto w-full px-4 py-6">
+      <div className="max-w-6xl mx-auto px-4 py-8">
         <StatusBar state={state} />
         
         {state === STATES.IDLE && (
-          <div className="text-center py-12">
-            <button
-              onClick={startChat}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg text-lg transition-colors"
-            >
-              Start Chat
-            </button>
-            <p className="text-gray-600 mt-4">Click to find a random stranger to chat with</p>
+          <div className="text-center">
+            {/* Hero Section */}
+            <div className="mb-12">
+              <h2 className="text-5xl font-bold text-gray-800 mb-6">
+                Start Chatting with
+                <span className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">
+                  Random Strangers
+                </span>
+              </h2>
+              <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
+                Experience the thrill of anonymous conversations. Connect with people from around the world, 
+                share thoughts, and make new connections - all without revealing your identity.
+              </p>
+            </div>
+
+            {/* Features Grid */}
+            <div className="grid md:grid-cols-3 gap-8 mb-12 max-w-4xl mx-auto">
+              <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200/50">
+                <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <span className="text-3xl">🔒</span>
+                </div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">100% Anonymous</h3>
+                <p className="text-gray-600">No personal information required. Your privacy is guaranteed.</p>
+              </div>
+              
+              <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200/50">
+                <div className="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <span className="text-3xl">🌍</span>
+                </div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">Global Connections</h3>
+                <p className="text-gray-600">Meet people from different countries and cultures worldwide.</p>
+              </div>
+              
+              <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200/50">
+                <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                  <span className="text-3xl">⚡</span>
+                </div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">Instant Pairing</h3>
+                <p className="text-gray-600">Get matched with strangers in seconds. No waiting, no delays.</p>
+              </div>
+            </div>
+
+            {/* CTA Button */}
+            <div className="mb-8">
+              <button
+                onClick={startChat}
+                className="group relative inline-flex items-center justify-center px-12 py-4 text-xl font-semibold text-white bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 overflow-hidden"
+              >
+                <span className="relative z-10 flex items-center space-x-3">
+                  <span>🚀</span>
+                  <span>Start Chatting Now</span>
+                  <span>💬</span>
+                </span>
+                <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+              </button>
+            </div>
+
+            {/* Stats */}
+            <div className="flex justify-center space-x-8 text-sm text-gray-500">
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                <span>Live connections</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-blue-400 rounded-full animate-pulse"></div>
+                <span>Secure & private</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
+                <span>No registration</span>
+              </div>
+            </div>
           </div>
         )}
 
         {state === STATES.SEARCHING && (
-          <div className="text-center py-12">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="text-gray-600 mt-4 text-lg">Looking for someone...</p>
+          <div className="text-center py-16">
+            <div className="mb-8">
+              <div className="relative inline-block">
+                <div className="w-24 h-24 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                <div className="absolute inset-0 w-24 h-24 border-4 border-transparent border-t-purple-600 rounded-full animate-spin" style={{animationDelay: '0.5s'}}></div>
+              </div>
+            </div>
+            <h3 className="text-3xl font-bold text-gray-800 mb-4">Looking for someone...</h3>
+            <p className="text-xl text-gray-600 mb-6">We're finding you the perfect chat partner</p>
+            <div className="flex justify-center space-x-2">
+              <div className="w-3 h-3 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0s'}}></div>
+              <div className="w-3 h-3 bg-purple-600 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+              <div className="w-3 h-3 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+            </div>
           </div>
         )}
 
@@ -159,29 +247,33 @@ function App() {
         )}
 
         {state === STATES.DISCONNECTED && (
-          <div className="text-center py-12">
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-              <p className="font-semibold">Stranger left the chat</p>
+          <div className="text-center py-16">
+            <div className="bg-red-50 border border-red-200 text-red-700 px-8 py-6 rounded-2xl mb-8 max-w-md mx-auto">
+              <div className="text-6xl mb-4">😔</div>
+              <h3 className="text-2xl font-semibold mb-2">Stranger left the chat</h3>
+              <p className="text-red-600">Don't worry, there are plenty more people to meet!</p>
             </div>
             <button
               onClick={startChat}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg text-lg transition-colors"
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-4 px-8 rounded-xl text-lg transition-all duration-200 transform hover:scale-105 shadow-lg"
             >
-              Start New Chat
+              🚀 Start New Chat
             </button>
           </div>
         )}
 
         {state === STATES.BACKEND_ERROR && (
-          <div className="text-center py-12">
-            <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded mb-4">
-              <p className="font-semibold">Backend server is not running. Please start it.</p>
+          <div className="text-center py-16">
+            <div className="bg-yellow-50 border border-yellow-200 text-yellow-700 px-8 py-6 rounded-2xl mb-8 max-w-md mx-auto">
+              <div className="text-6xl mb-4">⚠️</div>
+              <h3 className="text-2xl font-semibold mb-2">Connection Issue</h3>
+              <p className="text-yellow-600">Unable to connect to the chat server. Please try again later.</p>
             </div>
             <button
               onClick={startChat}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-lg text-lg transition-colors"
+              className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-4 px-8 rounded-xl text-lg transition-all duration-200 transform hover:scale-105 shadow-lg"
             >
-              Try Again
+              🔄 Try Again
             </button>
           </div>
         )}
