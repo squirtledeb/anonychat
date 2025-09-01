@@ -151,7 +151,7 @@ function App() {
   const handleSendMessage = (text) => {
     if (socket && text.trim()) {
       socket.emit('message', { text, userId });
-      setMessages((prevMessages) => [...prevMessages, { text, from: userId, timestamp: Date.now() }]);
+      setMessages((prevMessages) => [...prevMessages, { text, from: 'me', timestamp: Date.now() }]);
     }
   };
 
