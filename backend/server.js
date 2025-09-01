@@ -79,6 +79,19 @@ app.use(checkIPAccess);
 const waitingQueue = [];           // Array of userIds waiting to be paired
 const activePairs = {};            // Map: userId -> partnerId
 const sockets = {};                // Map: userId -> socket instance
+const onlineUsers = new Set();     // Set of all online users
+
+// Function to broadcast online stats to all connected users
+const broadcastOnlineStats = () => {
+  const stats = {
+    onlineUsers: onlineUsers.size,
+    waitingUsers: waitingQueue.length,
+    activeChats: Object.keys(activePairs).length / 2
+  };
+  
+  io.emit('online_stats', stats);
+  console.log('Broadcasting stats:', stats);
+};
 
 // Serve static files from the frontend build
 app.use(express.static(path.join(__dirname, '../frontend/dist')));
@@ -93,6 +106,8 @@ io.on('connection', (socket) => {
     
     // Store socket reference
     sockets[userId] = socket;
+    onlineUsers.add(userId);
+    broadcastOnlineStats();
     
     // Check if there's someone waiting in the queue
     if (waitingQueue.length > 0) {
@@ -172,6 +187,8 @@ io.on('connection', (socket) => {
       
       // Clean up socket reference
       delete sockets[disconnectedUserId];
+      onlineUsers.delete(disconnectedUserId);
+      broadcastOnlineStats();
     }
   });
 });
@@ -181,7 +198,18 @@ app.get('/health', (req, res) => {
   res.json({ 
     status: 'ok', 
     waiting: waitingQueue.length, 
-    activePairs: Object.keys(activePairs).length / 2 
+    activePairs: Object.keys(activePairs).length / 2,
+    onlineUsers: onlineUsers.size
+  });
+});
+
+// Stats endpoint for real-time user statistics
+app.get('/api/stats', (req, res) => {
+  res.json({
+    onlineUsers: onlineUsers.size,
+    waitingUsers: waitingQueue.length,
+    activeChats: Object.keys(activePairs).length / 2,
+    timestamp: Date.now()
   });
 });
 

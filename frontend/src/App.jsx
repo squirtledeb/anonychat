@@ -30,6 +30,11 @@ function App() {
   const [messages, setMessages] = useState([]);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const [onlineStats, setOnlineStats] = useState({
+    onlineUsers: 0,
+    waitingUsers: 0,
+    activeChats: 0
+  });
   const socketRef = useRef(null);
 
   // Generate or retrieve userId from localStorage
@@ -107,6 +112,12 @@ function App() {
         setIsConnecting(false);
       });
 
+      // Handle real-time online stats
+      newSocket.on('online_stats', (stats) => {
+        console.log('Received online stats:', stats);
+        setOnlineStats(stats);
+      });
+
       newSocket.on('connect_error', (err) => {
         console.error('Socket connection error:', err.message);
         setState(STATES.BACKEND_ERROR);
@@ -151,9 +162,25 @@ function App() {
       }
       // If we get here, access is allowed
       console.log('Access granted from college WiFi');
+      
+      // Fetch initial online stats
+      fetchOnlineStats();
     } catch (error) {
       console.error('Error checking IP access:', error);
       // If there's an error, we'll assume it's a network issue, not restriction
+    }
+  };
+
+  // Fetch current online stats
+  const fetchOnlineStats = async () => {
+    try {
+      const response = await fetch('/api/stats');
+      if (response.ok) {
+        const stats = await response.json();
+        setOnlineStats(stats);
+      }
+    } catch (error) {
+      console.error('Error fetching online stats:', error);
     }
   };
 
@@ -372,8 +399,62 @@ function App() {
                       <div className={`text-2xl font-semibold mb-6 ${
                         isDarkMode ? 'text-white' : 'text-gray-800'
                       }`}>Looking for someone to chat with...</div>
+                      
+                      {/* Real-time Stats */}
+                      <div className={`mb-8 p-6 rounded-2xl ${
+                        isDarkMode ? 'bg-gray-700/50' : 'bg-gray-100/50'
+                      } backdrop-blur-sm border ${
+                        isDarkMode ? 'border-gray-600' : 'border-gray-200'
+                      }`}>
+                        <h3 className={`text-lg font-semibold mb-4 ${
+                          isDarkMode ? 'text-white' : 'text-gray-800'
+                        }`}>Live Activity</h3>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                          <div className="text-center">
+                            <div className={`text-2xl font-bold ${
+                              isDarkMode ? 'text-green-400' : 'text-green-600'
+                            }`}>
+                              {onlineStats.onlineUsers || 0}
+                            </div>
+                            <div className={`text-sm ${
+                              isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                            }`}>Online Now</div>
+                          </div>
+                          <div className="text-center">
+                            <div className={`text-2xl font-bold ${
+                              isDarkMode ? 'text-blue-400' : 'text-blue-600'
+                            }`}>
+                              {onlineStats.waitingUsers || 0}
+                            </div>
+                            <div className={`text-sm ${
+                              isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                            }`}>Looking for Chat</div>
+                          </div>
+                          <div className="text-center">
+                            <div className={`text-2xl font-bold ${
+                              isDarkMode ? 'text-purple-400' : 'text-purple-600'
+                            }`}>
+                              {onlineStats.activeChats || 0}
+                            </div>
+                            <div className={`text-sm ${
+                              isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                            }`}>Active Chats</div>
+                          </div>
+                        </div>
+                      </div>
+                      
                       <div className="flex justify-center">
                         <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-purple-500"></div>
+                      </div>
+                      
+                      {/* Encouraging Message */}
+                      <div className={`mt-6 text-sm ${
+                        isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                      }`}>
+                        {onlineStats.waitingUsers > 1 
+                          ? `You're not alone! ${onlineStats.waitingUsers - 1} other people are also looking for a chat.`
+                          : "You're the first one here! More people will join soon."
+                        }
                       </div>
                     </div>
                   )}
