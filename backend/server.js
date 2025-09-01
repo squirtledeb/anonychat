@@ -3,6 +3,7 @@ const http = require('http');
 const socketIo = require('socket.io');
 const cors = require('cors');
 const path = require('path');
+const { isIPWhitelisted } = require('./whitelist');
 
 const app = express();
 const server = http.createServer(app);
@@ -13,12 +14,37 @@ const io = socketIo(server, {
   }
 });
 
+// IP restriction middleware
+const checkIPAccess = (req, res, next) => {
+  const clientIP = req.ip || req.connection.remoteAddress || req.socket.remoteAddress || req.connection.socket?.remoteAddress;
+  
+  // Clean up IP address (remove IPv6 prefix if present)
+  const cleanIP = clientIP.replace(/^::ffff:/, '');
+  
+  console.log(`Client IP: ${cleanIP}`);
+  
+  if (!isIPWhitelisted(cleanIP)) {
+    console.log(`Access denied for IP: ${cleanIP}`);
+    return res.status(403).json({
+      error: 'Access Denied',
+      message: 'This application is only available from authorized college WiFi networks.',
+      clientIP: cleanIP
+    });
+  }
+  
+  console.log(`Access granted for IP: ${cleanIP}`);
+  next();
+};
+
 // Middleware
 app.use(cors({
   origin: true, // Allow all origins for Render deployment
   credentials: true
 }));
 app.use(express.json());
+
+// Apply IP restriction to all routes
+app.use(checkIPAccess);
 
 // Data structures for managing chat sessions
 const waitingQueue = [];           // Array of userIds waiting to be paired
