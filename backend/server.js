@@ -72,7 +72,27 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// Apply IP restriction to all routes
+// API routes (no IP restriction)
+app.get('/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    waiting: waitingQueue.length, 
+    activePairs: Object.keys(activePairs).length / 2,
+    onlineUsers: onlineUsers.size
+  });
+});
+
+// Stats endpoint for real-time user statistics
+app.get('/api/stats', (req, res) => {
+  res.json({
+    onlineUsers: onlineUsers.size,
+    waitingUsers: waitingQueue.length,
+    activeChats: Object.keys(activePairs).length / 2,
+    timestamp: Date.now()
+  });
+});
+
+// Apply IP restriction to main app routes (not API endpoints)
 app.use(checkIPAccess);
 
 // Data structures for managing chat sessions
@@ -190,26 +210,6 @@ io.on('connection', (socket) => {
       onlineUsers.delete(disconnectedUserId);
       broadcastOnlineStats();
     }
-  });
-});
-
-// API routes
-app.get('/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    waiting: waitingQueue.length, 
-    activePairs: Object.keys(activePairs).length / 2,
-    onlineUsers: onlineUsers.size
-  });
-});
-
-// Stats endpoint for real-time user statistics
-app.get('/api/stats', (req, res) => {
-  res.json({
-    onlineUsers: onlineUsers.size,
-    waitingUsers: waitingQueue.length,
-    activeChats: Object.keys(activePairs).length / 2,
-    timestamp: Date.now()
   });
 });
 

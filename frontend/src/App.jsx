@@ -129,6 +129,17 @@ function App() {
         }
       });
 
+      newSocket.on('error', (err) => {
+        console.error('Socket error:', err);
+        setState(STATES.BACKEND_ERROR);
+        setIsConnecting(false);
+        if (socketRef.current) {
+          socketRef.current.disconnect();
+          socketRef.current = null;
+          setSocket(null);
+        }
+      });
+
       newSocket.on('disconnect', (reason) => {
         console.log('Socket disconnected:', reason);
         if (reason === 'io client disconnect') {
@@ -178,9 +189,23 @@ function App() {
       if (response.ok) {
         const stats = await response.json();
         setOnlineStats(stats);
+      } else {
+        console.log('Stats endpoint returned:', response.status);
+        // Set default stats if API fails
+        setOnlineStats({
+          onlineUsers: 1, // At least the current user
+          waitingUsers: 1, // Current user is waiting
+          activeChats: 0
+        });
       }
     } catch (error) {
       console.error('Error fetching online stats:', error);
+      // Set default stats on error
+      setOnlineStats({
+        onlineUsers: 1,
+        waitingUsers: 1,
+        activeChats: 0
+      });
     }
   };
 
