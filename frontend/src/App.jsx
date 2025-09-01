@@ -390,8 +390,8 @@ function App() {
                       onKeyPress={(e) => e.key === 'Enter' && addInterest()}
                       className={`flex-1 px-6 py-4 rounded-2xl border-2 transition-all duration-200 focus:outline-none focus:ring-4 ${
                         isDarkMode
-                          ? 'bg-gray-800 border-gray-700 text-white placeholder-gray-400 focus:border-white focus:ring-white/10'
-                          : 'bg-gray-50 border-gray-200 text-gray-900 placeholder-gray-500 focus:border-black focus:ring-black/10'
+                          ? 'bg-black border-gray-700 text-white placeholder-gray-400 focus:border-white focus:ring-white/10'
+                          : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500 focus:border-black focus:ring-black/10'
                       }`}
                     />
                     <button
