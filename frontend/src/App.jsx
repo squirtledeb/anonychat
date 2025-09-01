@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import io from 'socket.io-client';
-import StatusBar from './components/StatusBar';
 import ChatBox from './components/ChatBox';
 
 // App states: idle, searching, chatting, disconnected
@@ -26,6 +25,7 @@ function App() {
   const [socket, setSocket] = useState(null);
   const [userId, setUserId] = useState(null);
   const [messages, setMessages] = useState([]);
+  const [isConnecting, setIsConnecting] = useState(false);
   const socketRef = useRef(null);
 
   // Generate or retrieve userId from localStorage
@@ -38,10 +38,11 @@ function App() {
     setUserId(storedUserId);
   }, []);
 
-  // Initialize socket connection
-  useEffect(() => {
-    if (!userId) return;
+  // Initialize socket connection only when user starts chat
+  const initializeSocket = () => {
+    if (!userId || isConnecting) return;
 
+    setIsConnecting(true);
     console.log('Connecting to socket with userId:', userId);
     
     try {
@@ -57,11 +58,13 @@ function App() {
       // Socket event handlers
       newSocket.on('waiting', () => {
         console.log('Received waiting event');
+        setIsConnecting(false);
         setState(STATES.SEARCHING);
       });
 
       newSocket.on('paired', ({ partnerId }) => {
         console.log('Received paired event with partnerId:', partnerId);
+        setIsConnecting(false);
         setState(STATES.CHATTING);
         setMessages([]); // Clear previous messages
       });
@@ -73,6 +76,7 @@ function App() {
 
       newSocket.on('stranger_left', () => {
         console.log('Received stranger_left event');
+        setIsConnecting(false);
         setState(STATES.DISCONNECTED);
       });
 
@@ -82,24 +86,31 @@ function App() {
 
       newSocket.on('connect_error', (error) => {
         console.error('Socket connection error:', error);
+        setIsConnecting(false);
         // If backend is not running, show a helpful message
         setState(STATES.BACKEND_ERROR);
       });
 
-      return () => {
-        newSocket.close();
-      };
     } catch (error) {
       console.error('Error setting up socket:', error);
+      setIsConnecting(false);
+      setState(STATES.BACKEND_ERROR);
     }
-  }, [userId]);
+  };
+
+  // Cleanup socket on unmount
+  useEffect(() => {
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.close();
+      }
+    };
+  }, []);
 
   // Start new chat
   const startChat = () => {
-    if (socket) {
-      socket.emit('join', { userId });
-      setState(STATES.SEARCHING);
-      setMessages([]);
+    if (!isConnecting) {
+      initializeSocket();
     }
   };
 
@@ -142,8 +153,6 @@ function App() {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-8">
-        <StatusBar state={state} />
-        
         {state === STATES.IDLE && (
           <div className="text-center">
             {/* Hero Section */}
@@ -160,45 +169,30 @@ function App() {
               </p>
             </div>
 
-            {/* Features Grid */}
-            <div className="grid md:grid-cols-3 gap-8 mb-12 max-w-4xl mx-auto">
-              <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200/50">
-                <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <span className="text-3xl">🔒</span>
-                </div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">100% Anonymous</h3>
-                <p className="text-gray-600">No personal information required. Your privacy is guaranteed.</p>
-              </div>
-              
-              <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200/50">
-                <div className="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <span className="text-3xl">🌍</span>
-                </div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Global Connections</h3>
-                <p className="text-gray-600">Meet people from different countries and cultures worldwide.</p>
-              </div>
-              
-              <div className="bg-white/60 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-gray-200/50">
-                <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                  <span className="text-3xl">⚡</span>
-                </div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-2">Instant Pairing</h3>
-                <p className="text-gray-600">Get matched with strangers in seconds. No waiting, no delays.</p>
-              </div>
-            </div>
-
             {/* CTA Button */}
             <div className="mb-8">
               <button
                 onClick={startChat}
-                className="group relative inline-flex items-center justify-center px-12 py-4 text-xl font-semibold text-white bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200 overflow-hidden"
+                disabled={isConnecting}
+                className={`group relative inline-flex items-center justify-center px-12 py-4 text-xl font-semibold text-white rounded-2xl shadow-lg transition-all duration-200 overflow-hidden ${
+                  isConnecting 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-gradient-to-r from-blue-600 to-purple-600 hover:shadow-xl transform hover:scale-105'
+                }`}
               >
                 <span className="relative z-10 flex items-center space-x-3">
-                  <span>🚀</span>
-                  <span>Start Chatting Now</span>
-                  <span>💬</span>
+                  {isConnecting ? (
+                    <>
+                      <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      <span>Connecting...</span>
+                    </>
+                  ) : (
+                    <span>Start Chatting Now</span>
+                  )}
                 </span>
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                {!isConnecting && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-blue-600 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                )}
               </button>
             </div>
 
@@ -216,6 +210,24 @@ function App() {
                 <div className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
                 <span>No registration</span>
               </div>
+            </div>
+          </div>
+        )}
+
+        {isConnecting && (
+          <div className="text-center py-16">
+            <div className="mb-8">
+              <div className="relative inline-block">
+                <div className="w-24 h-24 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                <div className="absolute inset-0 w-24 h-24 border-4 border-transparent border-t-purple-600 rounded-full animate-spin" style={{animationDelay: '0.5s'}}></div>
+              </div>
+            </div>
+            <h3 className="text-3xl font-bold text-gray-800 mb-4">Connecting...</h3>
+            <p className="text-xl text-gray-600 mb-6">Establishing connection to chat server</p>
+            <div className="flex justify-center space-x-2">
+              <div className="w-3 h-3 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0s'}}></div>
+              <div className="w-3 h-3 bg-purple-600 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+              <div className="w-3 h-3 bg-blue-600 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
             </div>
           </div>
         )}
