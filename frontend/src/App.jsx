@@ -145,8 +145,7 @@ function App() {
     try {
       const response = await fetch('/health');
       if (response.status === 403) {
-        const data = await response.json();
-        console.log('Access denied:', data);
+        console.log('Access denied - showing restriction page');
         setState(STATES.RESTRICTED);
         return;
       }
@@ -157,6 +156,14 @@ function App() {
       // If there's an error, we'll assume it's a network issue, not restriction
     }
   };
+
+  // Also check IP access when the page loads (for direct navigation)
+  useEffect(() => {
+    // Check if we're already restricted
+    if (state !== STATES.RESTRICTED) {
+      checkIPAccess();
+    }
+  }, []);
 
   const handleStartChat = () => {
     setState(STATES.CONNECTING); // Set state to CONNECTING when button is clicked
