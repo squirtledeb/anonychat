@@ -38,15 +38,15 @@ function App() {
     setUserId(storedUserId);
   }, []);
 
-  // Initialize socket connection only when user starts chat
+  // Initialize socket connection
   const initializeSocket = () => {
     if (!userId || isConnecting) return;
 
     setIsConnecting(true);
-    console.log('Connecting to socket with userId:', userId);
     
     try {
-      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000';
+      // Connect to the same domain the app is running on
+      const backendUrl = window.location.origin;
       console.log('Connecting to backend at:', backendUrl);
       const newSocket = io(backendUrl);
       socketRef.current = newSocket;

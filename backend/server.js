@@ -8,14 +8,14 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: process.env.FRONTEND_URL || "http://localhost:5173", // Allow environment variable for production
+    origin: true, // Allow all origins for Render deployment
     methods: ["GET", "POST"]
   }
 });
 
 // Middleware
 app.use(cors({
-  origin: process.env.FRONTEND_URL || "http://localhost:5173",
+  origin: true, // Allow all origins for Render deployment
   credentials: true
 }));
 app.use(express.json());
