@@ -4,6 +4,7 @@
 const WHITELISTED_IPS = [
   // Only allow this specific IP address
   '117.232.140.181',
+  '182.79.16.62',
   
   // For testing on localhost (remove in production)
   '127.0.0.1',

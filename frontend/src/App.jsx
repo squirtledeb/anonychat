@@ -313,12 +313,12 @@ function App() {
                     <h1 className={`text-xl font-bold ${
                       isDarkMode ? 'text-white' : 'text-black'
                     }`}>
-                      Anonymous Chat
+                      Krizz
                     </h1>
                     <p className={`text-sm ${
                       isDarkMode ? 'text-gray-400' : 'text-gray-600'
                     }`}>
-                      Connect with strangers worldwide
+                      
                     </p>
                   </div>
                 </div>
@@ -361,12 +361,12 @@ function App() {
                   <h1 className={`text-6xl sm:text-7xl font-black mb-6 ${
                     isDarkMode ? 'text-white' : 'text-black'
                   }`}>
-                    Anonymous Chat
+                    Krizz
                   </h1>
                   <p className={`text-xl sm:text-2xl font-medium ${
                     isDarkMode ? 'text-gray-300' : 'text-gray-600'
                   }`}>
-                    Set up your anonymous profile
+                    Add your interests and start a conversation with another student on campus.
                   </p>
                 </div>
 
