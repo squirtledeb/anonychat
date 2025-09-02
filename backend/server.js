@@ -19,6 +19,7 @@ const waitingQueue = [];           // Array of userIds waiting to be paired
 const activePairs = {};            // Map: userId -> partnerId
 const sockets = {};                // Map: userId -> socket instance
 const onlineUsers = new Set();     // Set of all online users
+const userInterests = {};          // Map: userId -> array of interests
 
 // Function to broadcast online stats to all connected users
 const broadcastOnlineStats = () => {
@@ -121,34 +122,76 @@ io.on('connection', (socket) => {
   console.log('New user connected:', socket.id);
   
   // Handle user joining with their userId
-  socket.on('join', ({ userId }) => {
-    console.log('User joining:', userId);
+  socket.on('join', ({ userId, interests }) => {
+    console.log('User joining:', userId, 'with interests:', interests);
     
-    // Store socket reference
+    // Store socket reference and interests
     sockets[userId] = socket;
     onlineUsers.add(userId);
+    userInterests[userId] = interests || [];
     broadcastOnlineStats();
     
     // Check if there's someone waiting in the queue
     if (waitingQueue.length > 0) {
-      // Pair with someone from the queue
-      const partnerId = waitingQueue.shift();
-      const partnerSocket = sockets[partnerId];
+      // Find best match based on interests
+      let bestMatchIndex = -1;
+      let bestMatchScore = -1;
       
-      if (partnerSocket) {
-        // Create the pairing
-        activePairs[userId] = partnerId;
-        activePairs[partnerId] = userId;
+      for (let i = 0; i < waitingQueue.length; i++) {
+        const waitingUserId = waitingQueue[i];
+        const waitingInterests = userInterests[waitingUserId] || [];
         
-        // Notify both users they're paired
-        socket.emit('paired', { partnerId });
-        partnerSocket.emit('paired', { partnerId: userId });
+        // Calculate interest match score
+        const sharedInterests = interests.filter(interest => 
+          waitingInterests.includes(interest)
+        );
+        const matchScore = sharedInterests.length;
         
-        console.log(`Users ${userId} and ${partnerId} are now paired`);
+        if (matchScore > bestMatchScore) {
+          bestMatchScore = matchScore;
+          bestMatchIndex = i;
+        }
+      }
+      
+      if (bestMatchIndex >= 0) {
+        // Pair with best match
+        const partnerId = waitingQueue.splice(bestMatchIndex, 1)[0];
+        const partnerSocket = sockets[partnerId];
+        const partnerInterests = userInterests[partnerId] || [];
+        
+        if (partnerSocket) {
+          // Calculate shared interests
+          const sharedInterests = interests.filter(interest => 
+            partnerInterests.includes(interest)
+          );
+          
+          // Create the pairing
+          activePairs[userId] = partnerId;
+          activePairs[partnerId] = userId;
+          
+          // Notify both users they're paired with shared interests
+          socket.emit('paired', { 
+            partnerId, 
+            sharedInterests,
+            partnerInterests: partnerInterests
+          });
+          partnerSocket.emit('paired', { 
+            partnerId: userId, 
+            sharedInterests,
+            partnerInterests: interests
+          });
+          
+          console.log(`Users ${userId} and ${partnerId} are now paired with ${sharedInterests.length} shared interests:`, sharedInterests);
+        } else {
+          // Partner socket not found, add current user to queue
+          waitingQueue.push(userId);
+          socket.emit('waiting');
+        }
       } else {
-        // Partner socket not found, add current user to queue
+        // No good match found, add to queue
         waitingQueue.push(userId);
         socket.emit('waiting');
+        console.log(`User ${userId} added to waiting queue (no good match found)`);
       }
     } else {
       // No one waiting, add to queue
@@ -208,6 +251,7 @@ io.on('connection', (socket) => {
       // Clean up socket reference
       delete sockets[disconnectedUserId];
       onlineUsers.delete(disconnectedUserId);
+      delete userInterests[disconnectedUserId];
       broadcastOnlineStats();
     }
   });

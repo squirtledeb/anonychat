@@ -35,6 +35,7 @@ function App() {
     waitingUsers: 0,
     activeChats: 0
   });
+  const [sharedInterests, setSharedInterests] = useState([]);
   const socketRef = useRef(null);
   const [interestInput, setInterestInput] = useState('');
   const [selectedInterests, setSelectedInterests] = useState([]);
@@ -81,7 +82,7 @@ function App() {
       setSocket(newSocket);
 
       // Join the chat with userId
-      newSocket.emit('join', { userId });
+      newSocket.emit('join', { userId, interests: selectedInterests });
 
       // Socket event handlers
       newSocket.on('waiting', () => {
@@ -90,10 +91,11 @@ function App() {
         setIsConnecting(false);
       });
 
-      newSocket.on('paired', ({ partnerId }) => {
-        console.log('Received paired event with partnerId:', partnerId);
+      newSocket.on('paired', ({ partnerId, sharedInterests: interests }) => {
+        console.log('Received paired event with partnerId:', partnerId, 'and shared interests:', interests);
         setState(STATES.CHATTING);
         setMessages([]); // Clear previous messages
+        setSharedInterests(interests || []); // Store shared interests
         setIsConnecting(false);
       });
 
@@ -106,6 +108,7 @@ function App() {
         console.log('Received stranger_left event');
         setState(STATES.DISCONNECTED);
         setMessages([]);
+        setSharedInterests([]); // Clear shared interests
         if (socketRef.current) {
           socketRef.current.disconnect();
           socketRef.current = null;
@@ -245,6 +248,7 @@ function App() {
     }
     
     setState(STATES.CONNECTING); // Set state to CONNECTING when button is clicked
+    setSharedInterests([]); // Clear previous shared interests
     initializeSocket();
   };
 
@@ -254,6 +258,7 @@ function App() {
     }
     setState(STATES.IDLE);
     setMessages([]);
+    setSharedInterests([]); // Clear shared interests
   };
 
   const handleSendMessage = (text) => {
@@ -545,12 +550,43 @@ function App() {
                     </div>
                   )}
                   {state === STATES.CHATTING && (
-                    <ChatBox 
-                      messages={messages} 
-                      onSendMessage={handleSendMessage} 
-                      onDisconnect={handleDisconnect}
-                      isDarkMode={isDarkMode}
-                    />
+                    <>
+                      {/* Shared Interests Display */}
+                      {sharedInterests.length > 0 && (
+                        <div className={`mb-6 p-6 rounded-2xl border-2 text-center ${
+                          isDarkMode
+                            ? 'bg-black border-gray-700 shadow-2xl shadow-white/5'
+                            : 'bg-white border-gray-200 shadow-2xl shadow-black/10'
+                        }`}>
+                          <h3 className={`text-xl font-bold mb-3 ${
+                            isDarkMode ? 'text-white' : 'text-black'
+                          }`}>
+                            🎯 You both are interested in:
+                          </h3>
+                          <div className="flex flex-wrap justify-center gap-2">
+                            {sharedInterests.map((interest, index) => (
+                              <span
+                                key={index}
+                                className={`px-4 py-2 rounded-full text-sm font-medium ${
+                                  isDarkMode
+                                    ? 'bg-white text-black'
+                                    : 'bg-black text-white'
+                                }`}
+                              >
+                                {interest}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      <ChatBox 
+                        messages={messages} 
+                        onSendMessage={handleSendMessage} 
+                        onDisconnect={handleDisconnect}
+                        isDarkMode={isDarkMode}
+                      />
+                    </>
                   )}
                   {state === STATES.DISCONNECTED && (
                     <div className="text-center py-16">
