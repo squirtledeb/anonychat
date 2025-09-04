@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import io from 'socket.io-client';
 import ChatBox from './components/ChatBox';
 import RestrictionPage from './components/RestrictionPage';
@@ -24,7 +25,10 @@ const generateUUID = () => {
   });
 };
 
-function App() {
+// Main App Content Component
+function AppContent() {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [state, setState] = useState(STATES.IDLE);
   const [socket, setSocket] = useState(null);
   const [userId, setUserId] = useState(null);
@@ -57,6 +61,85 @@ function App() {
     // Check IP access on app load
     checkIPAccess();
   }, []);
+
+  // Sync URL with current state
+  useEffect(() => {
+    const currentPath = location.pathname;
+    
+    // Map URL paths to states
+    if (currentPath === '/' || currentPath === '/home') {
+      if (state !== STATES.IDLE && state !== STATES.RESTRICTED) {
+        setState(STATES.IDLE);
+      }
+    } else if (currentPath === '/welcome') {
+      if (state !== STATES.WELCOME) {
+        setState(STATES.WELCOME);
+      }
+    } else if (currentPath === '/connecting') {
+      if (state !== STATES.CONNECTING) {
+        setState(STATES.CONNECTING);
+      }
+    } else if (currentPath === '/searching') {
+      if (state !== STATES.SEARCHING) {
+        setState(STATES.SEARCHING);
+      }
+    } else if (currentPath === '/chat') {
+      if (state !== STATES.CHATTING) {
+        setState(STATES.CHATTING);
+      }
+    } else if (currentPath === '/disconnected') {
+      if (state !== STATES.DISCONNECTED) {
+        setState(STATES.DISCONNECTED);
+      }
+    } else if (currentPath === '/error') {
+      if (state !== STATES.BACKEND_ERROR) {
+        setState(STATES.BACKEND_ERROR);
+      }
+    } else if (currentPath === '/restricted') {
+      if (state !== STATES.RESTRICTED) {
+        setState(STATES.RESTRICTED);
+      }
+    }
+  }, [location.pathname]);
+
+  // Update URL when state changes
+  useEffect(() => {
+    const currentPath = location.pathname;
+    let targetPath = '/';
+    
+    switch (state) {
+      case STATES.IDLE:
+        targetPath = '/';
+        break;
+      case STATES.WELCOME:
+        targetPath = '/welcome';
+        break;
+      case STATES.CONNECTING:
+        targetPath = '/connecting';
+        break;
+      case STATES.SEARCHING:
+        targetPath = '/searching';
+        break;
+      case STATES.CHATTING:
+        targetPath = '/chat';
+        break;
+      case STATES.DISCONNECTED:
+        targetPath = '/disconnected';
+        break;
+      case STATES.BACKEND_ERROR:
+        targetPath = '/error';
+        break;
+      case STATES.RESTRICTED:
+        targetPath = '/restricted';
+        break;
+      default:
+        targetPath = '/';
+    }
+    
+    if (currentPath !== targetPath) {
+      navigate(targetPath, { replace: true });
+    }
+  }, [state, navigate, location.pathname]);
 
   // Load theme preference from localStorage
   useEffect(() => {
@@ -359,7 +442,7 @@ function App() {
               <div className="flex items-center justify-between h-16 sm:h-20">
                 {/* Logo */}
                 <button 
-                  onClick={() => setState(STATES.IDLE)}
+                  onClick={() => navigate('/')}
                   className="flex items-center space-x-2 sm:space-x-4 hover:opacity-80 transition-opacity duration-300"
                 >
                   <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-3xl flex items-center justify-center transition-all duration-500 ${
@@ -523,49 +606,49 @@ function App() {
                       <h3 className="text-lg font-bold text-gray-300 mb-4 text-center">🧪 Dev Mode - Test States</h3>
                       <div className="grid grid-cols-2 gap-3">
                         <button
-                          onClick={() => setState(STATES.WELCOME)}
+                          onClick={() => navigate('/welcome')}
                           className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm hover:bg-blue-700 transition-colors"
                         >
                           Test Welcome
                         </button>
                         <button
-                          onClick={() => setState(STATES.CONNECTING)}
+                          onClick={() => navigate('/connecting')}
                           className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm hover:bg-blue-700 transition-colors"
                         >
                           Test Connecting
                         </button>
                         <button
-                          onClick={() => setState(STATES.SEARCHING)}
+                          onClick={() => navigate('/searching')}
                           className="px-4 py-2 rounded-xl bg-yellow-600 text-white text-sm hover:bg-yellow-700 transition-colors"
                         >
                           Test Searching
                         </button>
                         <button
-                          onClick={() => setState(STATES.CHATTING)}
+                          onClick={() => navigate('/chat')}
                           className="px-4 py-2 rounded-xl bg-green-600 text-white text-sm hover:bg-green-700 transition-colors"
                         >
                           Test Chatting
                         </button>
                         <button
-                          onClick={() => setState(STATES.DISCONNECTED)}
+                          onClick={() => navigate('/disconnected')}
                           className="px-4 py-2 rounded-xl bg-red-600 text-white text-sm hover:bg-red-700 transition-colors"
                         >
                           Test Disconnected
                         </button>
                         <button
-                          onClick={() => setState(STATES.BACKEND_ERROR)}
+                          onClick={() => navigate('/error')}
                           className="px-4 py-2 rounded-xl bg-red-800 text-white text-sm hover:bg-red-900 transition-colors"
                         >
                           Test Backend Error
                         </button>
                         <button
-                          onClick={() => setState(STATES.IDLE)}
+                          onClick={() => navigate('/')}
                           className="px-4 py-2 rounded-xl bg-gray-600 text-white text-sm hover:bg-gray-700 transition-colors"
                         >
                           Back to Idle
                         </button>
                         <button
-                          onClick={() => setState(STATES.WELCOME)}
+                          onClick={() => navigate('/welcome')}
                           className="px-4 py-2 rounded-xl bg-purple-600 text-white text-sm hover:bg-purple-700 transition-colors"
                         >
                           Back to Welcome
@@ -719,7 +802,7 @@ function App() {
                         isDarkMode ? 'text-slate-400' : 'text-slate-600'
                       }`}>Don't worry! You can start a new conversation anytime.</p>
                       <button
-                        onClick={handleStartChat}
+                        onClick={() => navigate('/')}
                         className={`px-8 py-4 rounded-2xl font-bold text-lg transition-all duration-300 ${
                           isDarkMode 
                             ? 'bg-white text-slate-900 hover:bg-slate-100 shadow-2xl shadow-white/20 hover:shadow-white/40 hover:scale-105' 
@@ -746,7 +829,7 @@ function App() {
                         isDarkMode ? 'text-slate-400' : 'text-slate-600'
                       }`}>Could not connect to the server. Please check your connection and try again.</p>
                       <button
-                        onClick={handleStartChat}
+                        onClick={() => navigate('/')}
                         className={`px-8 py-4 rounded-2xl font-bold text-lg transition-all duration-300 ${
                           isDarkMode 
                             ? 'bg-white text-slate-900 hover:bg-slate-100 shadow-2xl shadow-white/20 hover:shadow-white/40 hover:scale-105' 
@@ -764,6 +847,17 @@ function App() {
         </>
       )}
     </div>
+  );
+}
+
+// Main App Component with Router
+function App() {
+  return (
+    <Router>
+      <Routes>
+        <Route path="*" element={<AppContent />} />
+      </Routes>
+    </Router>
   );
 }
 
