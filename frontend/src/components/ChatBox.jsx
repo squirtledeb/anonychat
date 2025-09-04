@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode, onStrangerTyping, socket }) => {
+const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode, onStrangerTyping, socket, userId }) => {
   const [inputText, setInputText] = useState('');
   const [buttonState, setButtonState] = useState('stop'); // 'stop', 'really', 'new'
   const [clickCount, setClickCount] = useState(0);
@@ -104,9 +104,9 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
     setInputText(e.target.value);
     
     // Emit typing events to let the stranger know we're typing
-    if (socket && e.target.value.trim()) {
+    if (socket && userId && e.target.value.trim()) {
       // User started typing
-      socket.emit('user_typing');
+      socket.emit('user_typing', { userId });
       
       // Clear existing timeout
       if (typingTimeout) {
@@ -115,15 +115,15 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
       
       // Set timeout to stop typing after 1 second of no activity
       const newTimeout = setTimeout(() => {
-        if (socket) {
-          socket.emit('user_stopped_typing');
+        if (socket && userId) {
+          socket.emit('user_stopped_typing', { userId });
         }
       }, 1000);
       
       setTypingTimeout(newTimeout);
-    } else if (socket && !e.target.value.trim()) {
+    } else if (socket && userId && !e.target.value.trim()) {
       // User cleared input, stop typing
-      socket.emit('user_stopped_typing');
+      socket.emit('user_stopped_typing', { userId });
       if (typingTimeout) {
         clearTimeout(typingTimeout);
         setTypingTimeout(null);
@@ -512,7 +512,7 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
                 message.from === 'me'
                   ? 'bg-blue-600 text-white'
                   : message.from === 'system'
-                  ? message.text.includes('You both like:') 
+                  ? (message.text.includes('You both like:') || message.isSharedInterests)
                     ? 'bg-green-600/20 border border-green-500/30 text-green-400' 
                     : 'bg-gray-700 text-gray-300'
                   : 'bg-gray-600/50 text-white'
@@ -533,7 +533,7 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
                       style={{ maxHeight: '200px' }}
                     />
                   </div>
-                ) : message.from === 'system' && message.text.includes('You both like:') ? (
+                ) : message.from === 'system' && (message.text.includes('You both like:') || message.isSharedInterests) ? (
                   <div className="text-center">
                     <div className="flex items-center justify-center mb-2">
                       <span className="text-lg">🤝</span>
@@ -626,27 +626,40 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
         </form>
       </div>
 
-      {/* Emoji Picker */}
+      {/* Emoji Picker - Clean Design Like Image */}
       {showEmojiPicker && (
-        <div data-emoji-picker className="absolute bottom-20 right-4 bg-gray-800 border border-gray-700 rounded-lg shadow-2xl z-50 w-80 h-80">
-          {/* Category Tabs */}
-          <div className="flex border-b border-gray-700 p-2">
+        <div data-emoji-picker className="absolute bottom-20 right-4 bg-gray-900 border border-gray-600 rounded-xl shadow-2xl z-50 w-80 h-96">
+          {/* Search Bar */}
+          <div className="p-3 border-b border-gray-700">
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm">🔍</span>
+              <input
+                type="text"
+                placeholder="Search"
+                className="w-full bg-gray-800 text-white rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+
+          {/* Category Tabs - Clean Icons */}
+          <div className="flex justify-between border-b border-gray-700 px-2 py-2">
             {[
-              { id: 'smileys', icon: '😊', name: 'Smileys' },
+              { id: 'recent', icon: '🕒', name: 'Recent' },
+              { id: 'smileys', icon: '😀', name: 'Smileys' },
               { id: 'people', icon: '👋', name: 'People' },
               { id: 'animals', icon: '🐶', name: 'Animals' },
-              { id: 'food', icon: '🍕', name: 'Food' },
+              { id: 'food', icon: '🍎', name: 'Food' },
               { id: 'activities', icon: '⚽', name: 'Activities' },
-              { id: 'travel', icon: '✈️', name: 'Travel' },
-              { id: 'objects', icon: '💻', name: 'Objects' },
+              { id: 'travel', icon: '🚗', name: 'Travel' },
+              { id: 'objects', icon: '⌚', name: 'Objects' },
               { id: 'symbols', icon: '❤️', name: 'Symbols' },
               { id: 'flags', icon: '🏁', name: 'Flags' }
             ].map((category) => (
               <button
                 key={category.id}
                 onClick={() => setSelectedEmojiCategory(category.id)}
-                className={`p-2 rounded text-lg hover:bg-gray-700 transition-colors ${
-                  selectedEmojiCategory === category.id ? 'bg-gray-600' : ''
+                className={`p-2 rounded-lg text-lg hover:bg-gray-700 transition-colors ${
+                  selectedEmojiCategory === category.id ? 'bg-blue-600' : 'bg-transparent'
                 }`}
                 title={category.name}
               >
@@ -655,11 +668,16 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
             ))}
           </div>
 
-          {/* Emoji Grid */}
-          <div className="h-64 overflow-y-auto p-2">
+          {/* Emoji Grid - Cleaner Layout */}
+          <div className="h-72 overflow-y-auto p-3">
             <div className="grid grid-cols-8 gap-1">
               {(() => {
                 const emojiCategories = {
+                  recent: [
+                    '😀', '😂', '❤️', '👍', '🙌', '🎉', '😊', '👏', 
+                    '🔥', '💯', '😍', '🤔', '😎', '👌', '✨', '💪',
+                    '🤣', '😘', '🥰', '😭', '🤗', '😉', '🙂', '😃'
+                  ],
                   smileys: [
                     '😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂',
                     '🙂', '🙃', '😉', '😊', '😇', '🥰', '😍', '🤩',
@@ -668,7 +686,9 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
                     '🤐', '🤨', '😐', '😑', '😶', '😏', '😒', '🙄',
                     '😬', '🤥', '😔', '😪', '🤤', '😴', '😷', '🤒',
                     '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '🥴', '😵',
-                    '🤯', '🤠', '🥳', '😎', '🤓', '🧐', '😕', '😟'
+                    '🤯', '🤠', '🥳', '😎', '🤓', '🧐', '😕', '😟',
+                    '🙁', '☹️', '😮', '😯', '😲', '😳', '🥺', '😦',
+                    '😧', '😨', '😰', '😥', '😢', '😭', '😱', '😖'
                   ],
                   people: [
                     '👋', '🤚', '🖐️', '✋', '🖖', '👌', '🤏', '✌️',
@@ -678,7 +698,8 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
                     '🤳', '💪', '🦾', '🦿', '🦵', '🦶', '👂', '🦻',
                     '👃', '🧠', '🦷', '🦴', '👀', '👁️', '👅', '👄',
                     '👶', '🧒', '👦', '👧', '🧑', '👱', '👨', '🧔',
-                    '👩', '🧓', '👴', '👵', '🙍', '🙎', '🙅', '🙆'
+                    '👩', '🧓', '👴', '👵', '🙍', '🙎', '🙅', '🙆',
+                    '💁', '🙋', '🧏', '🙇', '🤦', '🤷', '👨‍⚕️', '👩‍⚕️'
                   ],
                   animals: [
                     '🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼',
@@ -717,8 +738,8 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
                     '🪂', '💺', '🚀', '🛰️', '🚢', '⛵', '🚤', '🛥️',
                     '🛳️', '⛴️', '🚂', '🚃', '🚄', '🚅', '🚆', '🚇',
                     '🚈', '🚉', '🚊', '🚝', '🚞', '🚋', '🚌', '🚍',
-                    '🚎', '🚐', '🚑', '🚒', '🚓', '🚔', '🚕', '🚖',
-                    '🚗', '🚘', '🚙', '🛻', '🚚', '🚛', '🚜', '🏍️'
+                    '🏠', '🏡', '🏢', '🏣', '🏤', '🏥', '🏦', '🏨',
+                    '🏩', '🏪', '🏫', '🏬', '🏭', '🏯', '🏰', '💒'
                   ],
                   objects: [
                     '⌚', '📱', '📲', '💻', '⌨️', '🖥️', '🖨️', '🖱️',
@@ -742,13 +763,12 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
                   ],
                   flags: [
                     '🏁', '🚩', '🎌', '🏴', '🏳️', '🏳️‍🌈', '🏳️‍⚧️', '🏴‍☠️',
-                    '🇦🇨', '🇦🇩', '🇦🇪', '🇦🇫', '🇦🇬', '🇦🇮', '🇦🇱', '🇦🇲',
-                    '🇦🇴', '🇦🇶', '🇦🇷', '🇦🇸', '🇦🇹', '🇦🇺', '🇦🇼', '🇦🇽',
-                    '🇦🇿', '🇧🇦', '🇧🇧', '🇧🇩', '🇧🇪', '🇧🇫', '🇧🇬', '🇧🇭',
-                    '🇧🇮', '🇧🇯', '🇧🇱', '🇧🇲', '🇧🇳', '🇧🇴', '🇧🇶', '🇧🇷',
-                    '🇧🇸', '🇧🇹', '🇧🇻', '🇧🇼', '🇧🇾', '🇧🇿', '🇨🇦', '🇨🇨',
-                    '🇨🇩', '🇨🇫', '🇨🇬', '🇨🇭', '🇨🇮', '🇨🇰', '🇨🇱', '🇨🇲',
-                    '🇨🇳', '🇨🇴', '🇨🇵', '🇨🇷', '🇨🇺', '🇨🇻', '🇨🇼', '🇨🇽'
+                    '🇺🇸', '🇬🇧', '🇨🇦', '🇦🇺', '🇩🇪', '🇫🇷', '🇮🇹', '🇪🇸',
+                    '🇷🇺', '🇨🇳', '🇯🇵', '🇰🇷', '🇮🇳', '🇧🇷', '🇲🇽', '🇳🇱',
+                    '🇸🇪', '🇳🇴', '🇩🇰', '🇫🇮', '🇵🇱', '🇨🇭', '🇦🇹', '🇧🇪',
+                    '🇨🇿', '🇸🇰', '🇭🇺', '🇷🇴', '🇧🇬', '🇭🇷', '🇸🇮', '🇷🇸',
+                    '🇺🇦', '🇧🇾', '🇱🇹', '🇱🇻', '🇪🇪', '🇲🇩', '🇦🇱', '🇲🇰',
+                    '🇲🇪', '🇧🇦', '🇽🇰', '🇬🇷', '🇨🇾', '🇹🇷', '🇦🇲', '🇬🇪'
                   ]
                 };
                 
@@ -757,7 +777,8 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
                 <button
                   key={index}
                   onClick={() => handleEmojiSelect(emoji)}
-                  className="p-2 hover:bg-gray-700 rounded text-lg transition-colors"
+                  className="p-2 hover:bg-gray-700 rounded-lg text-lg transition-colors"
+                  data-emoji-button
                 >
                   {emoji}
                 </button>

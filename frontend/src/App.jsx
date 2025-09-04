@@ -186,14 +186,17 @@ function AppContent() {
         setMessages([]); // Clear previous messages
         setSharedInterests(interests || []); // Store shared interests
         
-        // Add shared interests message to chat
+        // Always add shared interests message to chat if they exist
         if (interests && interests.length > 0) {
           const interestsText = interests.join(', ');
-          setMessages([{ 
+          const sharedInterestsMessage = { 
             text: `You both like: ${interestsText}`, 
             from: 'system', 
-            timestamp: Date.now() 
-          }]);
+            timestamp: Date.now(),
+            isSharedInterests: true // Special flag to identify this message
+          };
+          setMessages([sharedInterestsMessage]);
+          console.log('Added shared interests message:', sharedInterestsMessage);
         }
         
         setIsConnecting(false);
@@ -741,6 +744,7 @@ function AppContent() {
                         isDarkMode={isDarkMode}
                         onStrangerTyping={isStrangerTyping}
                         socket={socket}
+                        userId={userId}
                       />
               </div>
             )}

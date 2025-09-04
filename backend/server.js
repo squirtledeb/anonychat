@@ -212,6 +212,27 @@ io.on('connection', (socket) => {
     }
   });
   
+  // Handle typing indicators
+  socket.on('user_typing', ({ userId }) => {
+    const partnerId = activePairs[userId];
+    
+    if (partnerId && sockets[partnerId]) {
+      // Forward typing indicator to partner
+      sockets[partnerId].emit('stranger_typing');
+      console.log(`User ${userId} is typing - notified ${partnerId}`);
+    }
+  });
+  
+  socket.on('user_stopped_typing', ({ userId }) => {
+    const partnerId = activePairs[userId];
+    
+    if (partnerId && sockets[partnerId]) {
+      // Forward stopped typing indicator to partner
+      sockets[partnerId].emit('stranger_stopped_typing');
+      console.log(`User ${userId} stopped typing - notified ${partnerId}`);
+    }
+  });
+  
   // Handle disconnection
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
