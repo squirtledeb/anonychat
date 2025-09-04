@@ -318,8 +318,9 @@ function App() {
   };
 
   const addInterest = () => {
-    if (interestInput.trim() && !selectedInterests.includes(interestInput.trim())) {
-      setSelectedInterests([...selectedInterests, interestInput.trim()]);
+    const trimmedInput = interestInput.trim();
+    if (trimmedInput && !selectedInterests.some(interest => interest.toLowerCase() === trimmedInput.toLowerCase())) {
+      setSelectedInterests([...selectedInterests, trimmedInput]);
       setInterestInput('');
     }
   };

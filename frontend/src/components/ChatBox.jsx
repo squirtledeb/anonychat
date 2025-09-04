@@ -5,8 +5,16 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode 
   const [buttonState, setButtonState] = useState('stop'); // 'stop', 'really', 'new'
   const [clickCount, setClickCount] = useState(0);
   const [lastClickTime, setLastClickTime] = useState(0);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showGifPicker, setShowGifPicker] = useState(false);
+  const [gifSearchQuery, setGifSearchQuery] = useState('');
+  const [gifs, setGifs] = useState([]);
+  const [isLoadingGifs, setIsLoadingGifs] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const [typingTimeout, setTypingTimeout] = useState(null);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const gifSearchRef = useRef(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -20,12 +28,309 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode 
     inputRef.current?.focus();
   }, []);
 
+  // Cleanup typing timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (typingTimeout) {
+        clearTimeout(typingTimeout);
+      }
+    };
+  }, [typingTimeout]);
+
+  // Handle keyboard shortcuts and click outside
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      // ESC key - close any open picker
+      if (e.key === 'Escape') {
+        if (showGifPicker) {
+          setShowGifPicker(false);
+          setGifSearchQuery('');
+        }
+        if (showEmojiPicker) {
+          setShowEmojiPicker(false);
+        }
+      }
+      
+      // Enter key in GIF search - perform search
+      if (e.key === 'Enter' && showGifPicker && gifSearchRef.current && document.activeElement === gifSearchRef.current) {
+        e.preventDefault();
+        searchGifs(gifSearchQuery);
+      }
+    };
+
+    const handleClickOutside = (e) => {
+      // Close pickers if clicking outside
+      if (showGifPicker || showEmojiPicker) {
+        const gifPicker = document.querySelector('[data-gif-picker]');
+        const emojiPicker = document.querySelector('[data-emoji-picker]');
+        
+        if (gifPicker && !gifPicker.contains(e.target) && !e.target.closest('[data-gif-button]')) {
+          setShowGifPicker(false);
+          setGifSearchQuery('');
+        }
+        
+        if (emojiPicker && !emojiPicker.contains(e.target) && !e.target.closest('[data-emoji-button]')) {
+          setShowEmojiPicker(false);
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('mousedown', handleClickOutside);
+    
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showGifPicker, showEmojiPicker, gifSearchQuery]);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (inputText.trim()) {
       onSendMessage(inputText);
       setInputText('');
+      setIsTyping(false);
+      if (typingTimeout) {
+        clearTimeout(typingTimeout);
+        setTypingTimeout(null);
+      }
     }
+  };
+
+  const handleInputChange = (e) => {
+    setInputText(e.target.value);
+    
+    // Show typing indicator
+    if (!isTyping && e.target.value.trim()) {
+      setIsTyping(true);
+    }
+    
+    // Clear existing timeout
+    if (typingTimeout) {
+      clearTimeout(typingTimeout);
+    }
+    
+    // Set new timeout to hide typing indicator
+    const newTimeout = setTimeout(() => {
+      setIsTyping(false);
+    }, 1000); // Hide after 1 second of no typing
+    
+    setTypingTimeout(newTimeout);
+  };
+
+  const handleGIFClick = () => {
+    setShowGifPicker(!showGifPicker);
+    setShowEmojiPicker(false);
+    if (!showGifPicker) {
+      loadRandomGifs();
+    }
+  };
+
+  const loadRandomGifs = async () => {
+    setIsLoadingGifs(true);
+    try {
+      // Try Giphy API first, but with better error handling
+      const response = await fetch('https://api.giphy.com/v1/gifs/trending?api_key=dc6zaTOxFJmzC&limit=8&rating=g', {
+        mode: 'cors',
+        headers: {
+          'Accept': 'application/json',
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.data && data.data.length > 0) {
+          const gifs = data.data.map(gif => ({
+            id: gif.id,
+            url: gif.images.original.url,
+            title: gif.title || 'GIF',
+            preview: gif.images.fixed_height_small.url || gif.images.original.url
+          }));
+          setGifs(gifs);
+          return;
+        }
+      }
+      
+      // If API fails, use diverse fallback GIFs with different URLs
+      const fallbackGifs = [
+        {
+          id: 'gif1',
+          url: 'https://media.giphy.com/media/3o7btPCcdNniyf0ArS/giphy.gif',
+          title: 'Happy Wednesday',
+          preview: 'https://media.giphy.com/media/3o7btPCcdNniyf0ArS/giphy.gif'
+        },
+        {
+          id: 'gif2',
+          url: 'https://media.giphy.com/media/26BRrSvJUa5yIYQgU/giphy.gif',
+          title: 'Good Morning',
+          preview: 'https://media.giphy.com/media/26BRrSvJUa5yIYQgU/giphy.gif'
+        },
+        {
+          id: 'gif3',
+          url: 'https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif',
+          title: 'Happy Humpday!',
+          preview: 'https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif'
+        },
+        {
+          id: 'gif4',
+          url: 'https://media.giphy.com/media/3o7btPCcdNniyf0ArS/giphy.gif',
+          title: 'Hello Hump Day',
+          preview: 'https://media.giphy.com/media/3o7btPCcdNniyf0ArS/giphy.gif'
+        },
+        {
+          id: 'gif5',
+          url: 'https://media.giphy.com/media/26BRrSvJUa5yIYQgU/giphy.gif',
+          title: 'Have a Great Day',
+          preview: 'https://media.giphy.com/media/26BRrSvJUa5yIYQgU/giphy.gif'
+        },
+        {
+          id: 'gif6',
+          url: 'https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif',
+          title: 'Smile More',
+          preview: 'https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif'
+        }
+      ];
+      setGifs(fallbackGifs);
+    } catch (error) {
+      console.error('Error loading GIFs:', error);
+      // Always show fallback GIFs even on error
+      const fallbackGifs = [
+        {
+          id: 'error1',
+          url: 'https://media.giphy.com/media/3o7btPCcdNniyf0ArS/giphy.gif',
+          title: 'Happy Wednesday',
+          preview: 'https://media.giphy.com/media/3o7btPCcdNniyf0ArS/giphy.gif'
+        },
+        {
+          id: 'error2',
+          url: 'https://media.giphy.com/media/26BRrSvJUa5yIYQgU/giphy.gif',
+          title: 'Good Morning',
+          preview: 'https://media.giphy.com/media/26BRrSvJUa5yIYQgU/giphy.gif'
+        },
+        {
+          id: 'error3',
+          url: 'https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif',
+          title: 'Happy Humpday!',
+          preview: 'https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif'
+        },
+        {
+          id: 'error4',
+          url: 'https://media.giphy.com/media/3o7btPCcdNniyf0ArS/giphy.gif',
+          title: 'Hello Hump Day',
+          preview: 'https://media.giphy.com/media/3o7btPCcdNniyf0ArS/giphy.gif'
+        }
+      ];
+      setGifs(fallbackGifs);
+    } finally {
+      setIsLoadingGifs(false);
+    }
+  };
+
+  const searchGifs = async (query) => {
+    if (!query.trim()) {
+      loadRandomGifs();
+      return;
+    }
+    
+    setIsLoadingGifs(true);
+    try {
+      // Try Giphy search API
+      const encodedQuery = encodeURIComponent(query);
+      const response = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=dc6zaTOxFJmzC&q=${encodedQuery}&limit=8&rating=g`, {
+        mode: 'cors',
+        headers: {
+          'Accept': 'application/json',
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        if (data.data && data.data.length > 0) {
+          const gifs = data.data.map(gif => ({
+            id: gif.id,
+            url: gif.images.original.url,
+            title: gif.title || query,
+            preview: gif.images.fixed_height_small.url || gif.images.original.url
+          }));
+          setGifs(gifs);
+          return;
+        }
+      }
+      
+      // If search fails, show filtered fallback GIFs based on query
+      const fallbackGifs = [
+        {
+          id: `search1_${query}`,
+          url: 'https://media.giphy.com/media/3o7btPCcdNniyf0ArS/giphy.gif',
+          title: `Search result for "${query}"`,
+          preview: 'https://media.giphy.com/media/3o7btPCcdNniyf0ArS/giphy.gif'
+        },
+        {
+          id: `search2_${query}`,
+          url: 'https://media.giphy.com/media/26BRrSvJUa5yIYQgU/giphy.gif',
+          title: `Another result for "${query}"`,
+          preview: 'https://media.giphy.com/media/26BRrSvJUa5yIYQgU/giphy.gif'
+        },
+        {
+          id: `search3_${query}`,
+          url: 'https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif',
+          title: `More "${query}" content`,
+          preview: 'https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif'
+        },
+        {
+          id: `search4_${query}`,
+          url: 'https://media.giphy.com/media/3o7btPCcdNniyf0ArS/giphy.gif',
+          title: `Best "${query}" GIF`,
+          preview: 'https://media.giphy.com/media/3o7btPCcdNniyf0ArS/giphy.gif'
+        }
+      ];
+      setGifs(fallbackGifs);
+    } catch (error) {
+      console.error('Error searching GIFs:', error);
+      // On error, show fallback search results
+      const fallbackGifs = [
+        {
+          id: `error1_${query}`,
+          url: 'https://media.giphy.com/media/3o7btPCcdNniyf0ArS/giphy.gif',
+          title: `Search result for "${query}"`,
+          preview: 'https://media.giphy.com/media/3o7btPCcdNniyf0ArS/giphy.gif'
+        },
+        {
+          id: `error2_${query}`,
+          url: 'https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif',
+          title: `Another result for "${query}"`,
+          preview: 'https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif'
+        }
+      ];
+      setGifs(fallbackGifs);
+    } finally {
+      setIsLoadingGifs(false);
+    }
+  };
+
+  const handleEmojiClick = () => {
+    setShowEmojiPicker(!showEmojiPicker);
+    setShowGifPicker(false);
+  };
+
+  const handleEmojiSelect = (emoji) => {
+    console.log('Emoji selected:', emoji);
+    if (onSendMessage) {
+      onSendMessage(emoji);
+    } else {
+      console.error('onSendMessage function not available');
+    }
+    setShowEmojiPicker(false);
+  };
+
+  const handleGifSelect = (gifUrl) => {
+    console.log('GIF selected:', gifUrl);
+    if (onSendMessage) {
+      onSendMessage(`[GIF: ${gifUrl}]`);
+    } else {
+      console.error('onSendMessage function not available');
+    }
+    setShowGifPicker(false);
   };
 
   const handleLeftButtonClick = () => {
@@ -147,10 +452,12 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode 
                   ? 'bg-blue-600 text-white'
                   : message.from === 'system'
                   ? 'bg-gray-700 text-gray-300'
-                  : 'bg-red-600 text-white'
+                  : 'bg-gray-600/50 text-white'
               }`}>
                 {message.from !== 'system' && (
-                  <div className="text-xs sm:text-sm font-medium mb-1">
+                  <div className={`text-xs sm:text-sm font-medium mb-1 ${
+                    message.from === 'me' ? 'text-blue-200' : 'text-gray-300'
+                  }`}>
                     {message.from === 'me' ? 'You' : 'Stranger'}
                   </div>
                 )}
@@ -159,6 +466,26 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode 
             </div>
           ))
         )}
+        
+        {/* Typing Indicator */}
+        {isTyping && (
+          <div className="flex justify-start">
+            <div className="max-w-[85%] sm:max-w-xs lg:max-w-md px-3 py-2 sm:px-4 sm:py-2 rounded-lg bg-gray-600/50 text-white">
+              <div className="text-xs sm:text-sm font-medium mb-1 text-gray-300">
+                Stranger
+              </div>
+              <div className="flex items-center space-x-1">
+                <span className="text-sm">is typing</span>
+                <div className="flex space-x-1">
+                  <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0ms'}}></div>
+                  <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></div>
+                  <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '300ms'}}></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        
         <div ref={messagesEndRef} />
       </div>
 
@@ -179,7 +506,7 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode 
             ref={inputRef}
             type="text"
             value={inputText}
-            onChange={(e) => setInputText(e.target.value)}
+            onChange={handleInputChange}
             placeholder="Type your message..."
             className="flex-1 px-3 py-2 sm:px-4 sm:py-3 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 text-xs sm:text-sm min-h-[36px] sm:min-h-[40px]"
           />
@@ -187,19 +514,135 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode 
           {/* GIF and Emoji Buttons - Right */}
           <button
             type="button"
+            onClick={handleGIFClick}
+            data-gif-button
             className="px-2 py-2 sm:px-3 sm:py-3 rounded-lg bg-gray-800 text-white text-xs sm:text-sm hover:bg-gray-700 transition-colors flex-shrink-0 min-w-[40px] sm:min-w-[50px]"
           >
             GIF
           </button>
           
+          {/* Emoji button - hidden on mobile */}
           <button
             type="button"
-            className="px-2 py-2 sm:px-3 sm:py-3 rounded-lg bg-gray-800 text-white text-xs sm:text-sm hover:bg-gray-700 transition-colors flex-shrink-0 min-w-[40px] sm:min-w-[50px]"
+            onClick={handleEmojiClick}
+            data-emoji-button
+            className="hidden sm:block px-2 py-2 sm:px-3 sm:py-3 rounded-lg bg-gray-800 text-white text-xs sm:text-sm hover:bg-gray-700 transition-colors flex-shrink-0 min-w-[40px] sm:min-w-[50px]"
           >
             😊
           </button>
+          
+          {/* Enter button - visible on both mobile and desktop */}
+          <button
+            type="submit"
+            disabled={!inputText.trim()}
+            className="px-2 py-2 sm:px-4 sm:py-3 rounded-lg bg-gray-800 text-white text-xs sm:text-sm hover:bg-gray-700 transition-colors disabled:opacity-50 border border-gray-700 flex-shrink-0 min-w-[50px] sm:min-w-[80px]"
+          >
+            <div className="text-center">
+              <div className="text-xs sm:text-base font-bold">Send</div>
+              <div className="text-xs text-blue-400">Enter</div>
+            </div>
+          </button>
         </form>
       </div>
+
+      {/* Emoji Picker */}
+      {showEmojiPicker && (
+        <div data-emoji-picker className="absolute bottom-20 right-4 bg-gray-800 border border-gray-700 rounded-lg p-4 shadow-2xl z-50">
+          <div className="grid grid-cols-6 gap-2">
+            {[
+              // Row 1: Happy faces
+              '😀', '😂', '😊', '😍', '🤔', '😎',
+              // Row 2: Celebrations and reactions
+              '🥳', '👍', '❤️', '🔥', '😢', '😡',
+              // Row 3: Expressions and achievements
+              '🤯', '💯', '🎉', '🚀', '💪', '👏',
+              // Row 4: Positive reactions
+              '🙌', '🤝', '💖', '🌟', '✨', '🎯',
+              // Row 5: Special items
+              '💎', '🎊', '🎈', '🎁', '🏆', '🎂',
+              // Row 6: More expressions
+              '😘', '😜', '🤪', '😇', '🥰', '😋',
+              // Row 7: Additional reactions
+              '🤨', '😏', '😒', '🙄', '😬', '🤐',
+              // Row 8: More emotions
+              '😴', '🤤', '😪', '🤢', '🤮', '🤧',
+              // Row 9: Weather and nature
+              '☀️', '🌙', '⭐', '🌈', '☁️', '❄️',
+              // Row 10: Animals
+              '🐶', '🐱', '🐭', '🐹', '🐰', '🦊'
+            ].map((emoji, index) => (
+              <button
+                key={index}
+                onClick={() => handleEmojiSelect(emoji)}
+                className="p-2 hover:bg-gray-700 rounded-lg text-xl transition-colors"
+              >
+                {emoji}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* GIF Picker */}
+      {showGifPicker && (
+        <div data-gif-picker className="absolute bottom-20 right-4 bg-gray-800 border border-gray-700 rounded-lg p-3 shadow-2xl z-50 w-72 max-h-72 overflow-hidden">
+          <h3 className="text-white font-bold mb-2 text-sm">Search GIFs</h3>
+          
+          {/* Search Bar */}
+          <div className="mb-2">
+            <input
+              ref={gifSearchRef}
+              type="text"
+              value={gifSearchQuery}
+              onChange={(e) => {
+                setGifSearchQuery(e.target.value);
+                // Debounce search
+                clearTimeout(window.gifSearchTimeout);
+                window.gifSearchTimeout = setTimeout(() => {
+                  searchGifs(e.target.value);
+                }, 300);
+              }}
+              placeholder="Search GIFs"
+              className="w-full px-2 py-1 rounded bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 text-xs"
+            />
+          </div>
+
+          {/* GIF Grid */}
+          <div className="max-h-40 overflow-y-auto">
+            {isLoadingGifs ? (
+              <div className="flex items-center justify-center py-4">
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-transparent border-t-white border-r-white/50"></div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 gap-1">
+                {gifs.map((gif) => (
+                  <button
+                    key={gif.id}
+                    onClick={() => handleGifSelect(gif.url)}
+                    className="bg-gray-700 hover:bg-gray-600 rounded p-1 transition-colors group"
+                  >
+                    <div className="aspect-square bg-gray-600 rounded mb-1 overflow-hidden">
+                      <img
+                        src={gif.preview}
+                        alt={gif.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                          e.target.nextSibling.style.display = 'flex';
+                        }}
+                      />
+                      <div className="w-full h-full bg-gray-600 flex items-center justify-center text-gray-400 text-xs" style={{display: 'none'}}>
+                        GIF
+                      </div>
+                    </div>
+                    <p className="text-white text-xs truncate">{gif.title}</p>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
