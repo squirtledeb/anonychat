@@ -48,6 +48,7 @@ function AppContent() {
   const socketRef = useRef(null);
   const [interestInput, setInterestInput] = useState('');
   const [selectedInterests, setSelectedInterests] = useState([]);
+  const [isStrangerTyping, setIsStrangerTyping] = useState(false);
 
   // Generate or retrieve userId from localStorage
   useEffect(() => {
@@ -203,11 +204,23 @@ function AppContent() {
         setMessages((prevMessages) => [...prevMessages, { text, from, timestamp: Date.now() }]);
       });
 
+      // Handle typing indicators
+      newSocket.on('stranger_typing', () => {
+        console.log('Stranger is typing');
+        setIsStrangerTyping(true);
+      });
+
+      newSocket.on('stranger_stopped_typing', () => {
+        console.log('Stranger stopped typing');
+        setIsStrangerTyping(false);
+      });
+
       newSocket.on('stranger_left', () => {
         console.log('Received stranger_left event');
         setState(STATES.DISCONNECTED);
         setMessages([]);
         setSharedInterests([]); // Clear shared interests
+        setIsStrangerTyping(false); // Clear typing indicator
         if (socketRef.current) {
           socketRef.current.disconnect();
           socketRef.current = null;
@@ -381,6 +394,7 @@ function AppContent() {
     setState(STATES.CONNECTING); // Start a new chat connection
     setSharedInterests([]); // Clear previous shared interests
     setMessages([]); // Clear previous messages
+    setIsStrangerTyping(false); // Clear typing indicator
     initializeSocket();
   };
 
@@ -391,6 +405,7 @@ function AppContent() {
     setState(STATES.IDLE);
     setMessages([]);
     setSharedInterests([]); // Clear shared interests
+    setIsStrangerTyping(false); // Clear typing indicator
   };
 
   const handleSendMessage = (text) => {
@@ -722,8 +737,9 @@ function AppContent() {
                         messages={messages} 
                         onSendMessage={handleSendMessage} 
                         onDisconnect={handleDisconnect}
-                  onNewChat={handleNewChat}
+                        onNewChat={handleNewChat}
                         isDarkMode={isDarkMode}
+                        onStrangerTyping={isStrangerTyping}
                       />
               </div>
             )}

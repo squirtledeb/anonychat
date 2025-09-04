@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode }) => {
+const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode, onStrangerTyping }) => {
   const [inputText, setInputText] = useState('');
   const [buttonState, setButtonState] = useState('stop'); // 'stop', 'really', 'new'
   const [clickCount, setClickCount] = useState(0);
@@ -10,7 +10,7 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode 
   const [gifSearchQuery, setGifSearchQuery] = useState('');
   const [gifs, setGifs] = useState([]);
   const [isLoadingGifs, setIsLoadingGifs] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
+  const [isStrangerTyping, setIsStrangerTyping] = useState(false);
   const [typingTimeout, setTypingTimeout] = useState(null);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -36,6 +36,13 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode 
       }
     };
   }, [typingTimeout]);
+
+  // Handle stranger typing state changes
+  useEffect(() => {
+    if (onStrangerTyping !== undefined) {
+      setIsStrangerTyping(onStrangerTyping);
+    }
+  }, [onStrangerTyping]);
 
   // Handle keyboard shortcuts and click outside
   useEffect(() => {
@@ -89,33 +96,13 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode 
     if (inputText.trim()) {
       onSendMessage(inputText);
       setInputText('');
-      setIsTyping(false);
-      if (typingTimeout) {
-        clearTimeout(typingTimeout);
-        setTypingTimeout(null);
-      }
     }
   };
 
   const handleInputChange = (e) => {
     setInputText(e.target.value);
-    
-    // Show typing indicator
-    if (!isTyping && e.target.value.trim()) {
-      setIsTyping(true);
-    }
-    
-    // Clear existing timeout
-    if (typingTimeout) {
-      clearTimeout(typingTimeout);
-    }
-    
-    // Set new timeout to hide typing indicator
-    const newTimeout = setTimeout(() => {
-      setIsTyping(false);
-    }, 1000); // Hide after 1 second of no typing
-    
-    setTypingTimeout(newTimeout);
+    // Note: We don't show typing indicator for local user typing
+    // The typing indicator should only show when stranger is typing
   };
 
   const handleGIFClick = () => {
@@ -434,7 +421,7 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode 
       </div>
 
       {/* Chat Messages Area */}
-      <div className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-3 min-h-0">
+      <div className="flex-1 overflow-y-auto p-2 sm:p-4 pb-4 sm:pb-6 space-y-3 min-h-0">
         {messages.length === 0 ? (
           <div className="text-center py-12 sm:py-20">
             <div className="text-4xl sm:text-6xl mb-4">💬</div>
@@ -456,19 +443,30 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode 
               }`}>
                 {message.from !== 'system' && (
                   <div className={`text-xs sm:text-sm font-medium mb-1 ${
-                    message.from === 'me' ? 'text-blue-200' : 'text-gray-300'
+                    message.from === 'me' ? 'text-black' : 'text-orange-500'
                   }`}>
                     {message.from === 'me' ? 'You' : 'Stranger'}
                   </div>
                 )}
-                <p className="text-sm sm:text-sm break-words">{message.text}</p>
+                {message.text.startsWith('[GIF:') && message.text.endsWith(']') ? (
+                  <div className="mt-2">
+                    <img 
+                      src={message.text.slice(5, -1)} 
+                      alt="GIF" 
+                      className="max-w-full h-auto rounded-lg"
+                      style={{ maxHeight: '200px' }}
+                    />
+                  </div>
+                ) : (
+                  <p className="text-sm sm:text-sm break-words">{message.text}</p>
+                )}
               </div>
             </div>
           ))
         )}
         
-        {/* Typing Indicator */}
-        {isTyping && (
+        {/* Typing Indicator - Only shows when stranger is typing */}
+        {isStrangerTyping && (
           <div className="flex justify-start">
             <div className="max-w-[85%] sm:max-w-xs lg:max-w-md px-3 py-2 sm:px-4 sm:py-2 rounded-lg bg-gray-600/50 text-white">
               <div className="text-xs sm:text-sm font-medium mb-1 text-gray-300">
@@ -569,7 +567,83 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode 
               // Row 9: Weather and nature
               '☀️', '🌙', '⭐', '🌈', '☁️', '❄️',
               // Row 10: Animals
-              '🐶', '🐱', '🐭', '🐹', '🐰', '🦊'
+              '🐶', '🐱', '🐭', '🐹', '🐰', '🦊',
+              // Row 11: More animals
+              '🐻', '🐼', '🐨', '🐯', '🦁', '🐮',
+              // Row 12: Food and drinks
+              '🍕', '🍔', '🍟', '🌭', '🥪', '🌮',
+              // Row 13: More food
+              '🍜', '🍱', '🍣', '🍤', '🍙', '🍚',
+              // Row 14: Drinks and desserts
+              '☕', '🍵', '🥤', '🍺', '🍷', '🍰',
+              // Row 15: Activities and sports
+              '⚽', '🏀', '🏈', '⚾', '🎾', '🏐',
+              // Row 16: More sports
+              '🏓', '🏸', '🏒', '🏑', '🎯', '🏹',
+              // Row 17: Music and entertainment
+              '🎵', '🎶', '🎤', '🎧', '🎸', '🎹',
+              // Row 18: More entertainment
+              '🎭', '🎪', '🎨', '🎬', '📺', '🎮',
+              // Row 19: Technology and objects
+              '📱', '💻', '⌚', '📷', '📹', '🎥',
+              // Row 20: More objects
+              '📚', '📖', '✏️', '✒️', '🖊️', '🖋️',
+              // Row 21: Travel and transportation
+              '✈️', '🚁', '🚀', '🚗', '🚙', '🚌',
+              // Row 22: More transportation
+              '🚲', '🏍️', '🚂', '🚆', '🚇', '🚊',
+              // Row 23: Buildings and places
+              '🏠', '🏡', '🏢', '🏣', '🏤', '🏥',
+              // Row 24: More places
+              '🏦', '🏨', '🏩', '🏪', '🏫', '🏬',
+              // Row 25: Nature and plants
+              '🌱', '🌿', '🍀', '🌾', '🌵', '🌲',
+              // Row 26: More nature
+              '🌳', '🌴', '🌰', '🌺', '🌻', '🌷',
+              // Row 27: Hand gestures
+              '👋', '🤚', '🖐️', '✋', '🖖', '👌',
+              // Row 28: More gestures
+              '🤏', '✌️', '🤞', '🤟', '🤘', '🤙',
+              // Row 29: Body parts
+              '👀', '👁️', '👂', '👃', '👄', '👅',
+              // Row 30: More body parts
+              '🦷', '🦴', '👶', '🧒', '👦', '👧',
+              // Row 31: People
+              '👨', '👩', '🧑', '👴', '👵', '👱',
+              // Row 32: More people
+              '👲', '🧔', '👳', '👮', '👷', '💂',
+              // Row 33: Clothing
+              '👕', '👖', '🧥', '🧦', '👗', '👘',
+              // Row 34: More clothing
+              '👙', '👚', '👛', '👜', '👝', '🎒',
+              // Row 35: Accessories
+              '👞', '👟', '👠', '👡', '👢', '👑',
+              // Row 36: More accessories
+              '👒', '🎩', '🎓', '🧢', '⛑️', '💍',
+              // Row 37: Symbols and signs
+              '💎', '🔮', '🔭', '🔬', '📡', '💻',
+              // Row 38: More symbols
+              '📱', '☎️', '📞', '📟', '📠', '🔋',
+              // Row 39: Tools and equipment
+              '🔧', '🔨', '⚒️', '🛠️', '⚙️', '🔩',
+              // Row 40: More tools
+              '⚖️', '🔗', '⛓️', '🧰', '🧲', '⚗️',
+              // Row 41: Medical and science
+              '🧪', '🧫', '🧬', '🦠', '💊', '💉',
+              // Row 42: More medical
+              '🩹', '🩺', '🚑', '🚨', '🚔', '🚓',
+              // Row 43: Flags and countries
+              '🏁', '🚩', '🎌', '🏴', '🏳️', '🏳️‍🌈',
+              // Row 44: More flags
+              '🏳️‍⚧️', '🏴‍☠️', '🇺🇸', '🇬🇧', '🇨🇦', '🇦🇺',
+              // Row 45: Even more flags
+              '🇫🇷', '🇩🇪', '🇯🇵', '🇰🇷', '🇨🇳', '🇮🇳',
+              // Row 46: Additional flags
+              '🇧🇷', '🇷🇺', '🇮🇹', '🇪🇸', '🇲🇽', '🇳🇱',
+              // Row 47: More miscellaneous
+              '🎊', '🎉', '🎈', '🎁', '🎀', '🎂',
+              // Row 48: Final row
+              '🍰', '🧁', '🍪', '🍩', '🍫', '🍬'
             ].map((emoji, index) => (
               <button
                 key={index}
