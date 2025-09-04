@@ -1,55 +1,61 @@
 import React from 'react';
 
-const StatusBar = ({ state }) => {
+const StatusBar = ({ state, isDarkMode }) => {
   const getStatusInfo = () => {
     switch (state) {
       case 'idle':
         return { 
           text: 'Ready to chat', 
-          color: 'bg-gradient-to-r from-gray-500 to-gray-600', 
+          color: isDarkMode ? 'text-slate-300' : 'text-slate-600',
+          bg: isDarkMode ? 'bg-slate-800/50' : 'bg-slate-100/50',
+          border: isDarkMode ? 'border-slate-700/50' : 'border-slate-200/50',
           icon: '💬',
-          bg: 'bg-gray-50',
-          border: 'border-gray-200'
+          iconBg: isDarkMode ? 'bg-slate-700/50' : 'bg-slate-200/50'
         };
       case 'searching':
         return { 
           text: 'Searching for stranger...', 
-          color: 'bg-gradient-to-r from-yellow-500 to-orange-500', 
+          color: isDarkMode ? 'text-amber-300' : 'text-amber-600',
+          bg: isDarkMode ? 'bg-amber-500/20' : 'bg-amber-100/50',
+          border: isDarkMode ? 'border-amber-500/30' : 'border-amber-200/50',
           icon: '🔍',
-          bg: 'bg-yellow-50',
-          border: 'border-yellow-200'
+          iconBg: isDarkMode ? 'bg-amber-500/30' : 'bg-amber-200/50'
         };
       case 'chatting':
         return { 
           text: 'Connected with stranger', 
-          color: 'bg-gradient-to-r from-green-500 to-emerald-500', 
+          color: isDarkMode ? 'text-emerald-300' : 'text-emerald-600',
+          bg: isDarkMode ? 'bg-emerald-500/20' : 'bg-emerald-100/50',
+          border: isDarkMode ? 'border-emerald-500/30' : 'border-emerald-200/50',
           icon: '✅',
-          bg: 'bg-green-50',
-          border: 'border-green-200'
+          iconBg: isDarkMode ? 'bg-emerald-500/30' : 'bg-emerald-200/50'
         };
       case 'disconnected':
         return { 
           text: 'Stranger left', 
-          color: 'bg-gradient-to-r from-red-500 to-pink-500', 
+          color: isDarkMode ? 'text-red-300' : 'text-red-600',
+          bg: isDarkMode ? 'bg-red-500/20' : 'bg-red-100/50',
+          border: isDarkMode ? 'border-red-500/30' : 'border-red-200/50',
           icon: '❌',
-          bg: 'bg-red-50',
-          border: 'border-red-200'
+          iconBg: isDarkMode ? 'bg-red-500/30' : 'bg-red-200/50'
         };
       case 'backend_error':
         return { 
           text: 'Connection error', 
-          color: 'bg-gradient-to-r from-red-500 to-orange-500', 
+          color: isDarkMode ? 'text-red-300' : 'text-red-600',
+          bg: isDarkMode ? 'bg-red-500/20' : 'bg-red-100/50',
+          border: isDarkMode ? 'border-red-500/30' : 'border-red-200/50',
           icon: '⚠️',
-          bg: 'bg-red-50',
-          border: 'border-red-200'
+          iconBg: isDarkMode ? 'bg-red-500/30' : 'bg-red-200/50'
         };
       default:
         return { 
           text: 'Unknown', 
-          color: 'bg-gradient-to-r from-gray-500 to-gray-600', 
+          color: isDarkMode ? 'text-slate-300' : 'text-slate-600',
+          bg: isDarkMode ? 'bg-slate-800/50' : 'bg-slate-100/50',
+          border: isDarkMode ? 'border-slate-700/50' : 'border-slate-200/50',
           icon: '❓',
-          bg: 'bg-gray-50',
-          border: 'border-gray-200'
+          iconBg: isDarkMode ? 'bg-slate-700/50' : 'bg-slate-200/50'
         };
     }
   };
@@ -57,10 +63,14 @@ const StatusBar = ({ state }) => {
   const status = getStatusInfo();
 
   return (
-    <div className="mb-8">
-      <div className={`inline-flex items-center px-6 py-3 rounded-2xl text-white text-sm font-medium shadow-lg ${status.color} ${status.bg} ${status.border} border backdrop-blur-sm`}>
-        <span className="mr-3 text-lg animate-pulse">{status.icon}</span>
-        <span className="font-semibold">{status.text}</span>
+    <div className="mb-8 animate-fade-in-down">
+      <div className={`inline-flex items-center px-8 py-4 rounded-3xl text-sm font-bold shadow-2xl backdrop-blur-2xl transition-all duration-500 hover:scale-105 ${
+        status.bg
+      } ${status.border} border`}>
+        <div className={`mr-4 p-3 rounded-2xl ${status.iconBg} animate-pulse`}>
+          <span className="text-xl">{status.icon}</span>
+        </div>
+        <span className={`font-bold text-lg ${status.color}`}>{status.text}</span>
       </div>
     </div>
   );

@@ -6,6 +6,7 @@ import RestrictionPage from './components/RestrictionPage';
 // App states: idle, connecting, searching, chatting, disconnected, backend_error, restricted
 const STATES = {
   IDLE: 'idle',
+  WELCOME: 'welcome',
   CONNECTING: 'connecting',
   SEARCHING: 'searching',
   CHATTING: 'chatting',
@@ -30,6 +31,10 @@ function App() {
   const [messages, setMessages] = useState([]);
   const [isConnecting, setIsConnecting] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(true);
+  const [hasSeenWelcome, setHasSeenWelcome] = useState(() => {
+    const saved = localStorage.getItem('hasSeenWelcome');
+    return saved ? JSON.parse(saved) : false;
+  });
   const [onlineStats, setOnlineStats] = useState({
     onlineUsers: 0,
     waitingUsers: 0,
@@ -152,7 +157,7 @@ function App() {
         } else {
           // Server disconnected or network error
           if (state !== STATES.DISCONNECTED && state !== STATES.BACKEND_ERROR) {
-            setState(STATES.DISCONNECTED);
+            setState(STATES.BACKEND_ERROR);
           }
         }
         setIsConnecting(false);
@@ -184,6 +189,12 @@ function App() {
     } catch (error) {
       console.error('Error checking IP access:', error);
       // If there's an error, we'll assume it's a network issue, not restriction
+      // Set default stats and continue
+      setOnlineStats({
+        onlineUsers: 1,
+        waitingUsers: 1,
+        activeChats: 0
+      });
     }
   };
 
@@ -195,17 +206,26 @@ function App() {
       console.log('Stats response headers:', response.headers);
       
       if (response.ok) {
-        const text = await response.text(); // Get raw response first
-        console.log('Stats response text:', text);
+        const contentType = response.headers.get('content-type');
         
+        // Check if response is actually JSON
+        if (contentType && contentType.includes('application/json')) {
         try {
-          const stats = JSON.parse(text);
+            const stats = await response.json();
           console.log('Parsed stats:', stats);
           setOnlineStats(stats);
         } catch (parseError) {
           console.error('Failed to parse stats JSON:', parseError);
-          console.log('Raw response was:', text);
           // Set default stats if JSON parsing fails
+            setOnlineStats({
+              onlineUsers: 1,
+              waitingUsers: 1,
+              activeChats: 0
+            });
+          }
+        } else {
+          console.log('Response is not JSON, content-type:', contentType);
+          // Set default stats if response is not JSON
           setOnlineStats({
             onlineUsers: 1,
             waitingUsers: 1,
@@ -214,12 +234,10 @@ function App() {
         }
       } else {
         console.log('Stats endpoint returned error status:', response.status);
-        const errorText = await response.text();
-        console.log('Error response:', errorText);
         // Set default stats if API fails
         setOnlineStats({
-          onlineUsers: 1, // At least the current user
-          waitingUsers: 1, // Current user is waiting
+          onlineUsers: 1,
+          waitingUsers: 1,
           activeChats: 0
         });
       }
@@ -243,12 +261,32 @@ function App() {
   }, []);
 
   const handleStartChat = () => {
-    if (selectedInterests.length === 0) {
-      return; // Don't start if no interests
+    if (hasSeenWelcome) {
+      // Skip welcome screen, go directly to connecting
+      setState(STATES.CONNECTING);
+      setSharedInterests([]);
+      initializeSocket();
+    } else {
+      // Show welcome screen first time
+      setState(STATES.WELCOME);
+      setSharedInterests([]);
     }
+  };
+
+  const handleStartConnection = () => {
+    // Mark that user has seen the welcome screen
+    setHasSeenWelcome(true);
+    localStorage.setItem('hasSeenWelcome', 'true');
     
     setState(STATES.CONNECTING); // Set state to CONNECTING when button is clicked
     setSharedInterests([]); // Clear previous shared interests
+    initializeSocket();
+  };
+
+  const handleNewChat = () => {
+    setState(STATES.CONNECTING); // Start a new chat connection
+    setSharedInterests([]); // Clear previous shared interests
+    setMessages([]); // Clear previous messages
     initializeSocket();
   };
 
@@ -289,10 +327,10 @@ function App() {
   }, []);
 
   return (
-    <div className={`min-h-screen transition-all duration-500 ${
+    <div className={`h-screen w-full transition-all duration-700 ${
       isDarkMode 
         ? 'bg-black text-white' 
-        : 'bg-white text-gray-900'
+        : 'bg-gradient-to-br from-slate-50 via-white to-slate-100 text-gray-900'
     }`}>
       {/* Show restriction page if access is denied */}
       {state === STATES.RESTRICTED ? (
@@ -300,55 +338,64 @@ function App() {
       ) : (
         <>
           {/* Header with Theme Toggle */}
-          <header className={`sticky top-0 z-50 backdrop-blur-xl border-b transition-all duration-500 ${
+          <header className={`sticky top-0 z-50 backdrop-blur-2xl border-b transition-all duration-700 w-full ${
             isDarkMode 
               ? 'bg-black/95 border-gray-800' 
-              : 'bg-white/95 border-gray-100'
+              : 'bg-white/80 border-slate-200/50 shadow-2xl shadow-slate-900/10'
           }`}>
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex items-center justify-between h-16">
+            <div className="max-w-7xl mx-auto px-6 lg:px-8">
+              <div className="flex items-center justify-between h-20">
                 {/* Logo */}
-                <div className="flex items-center space-x-3">
-                  <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${
-                    isDarkMode ? 'bg-white' : 'bg-black'
-                  }`}>
-                    <span className={`text-xl ${isDarkMode ? 'text-black' : 'text-white'}`}>💬</span>
+                <button 
+                  onClick={() => setState(STATES.IDLE)}
+                  className="flex items-center space-x-4 hover:opacity-80 transition-opacity duration-300"
+                >
+                  <div className={`w-12 h-12 rounded-3xl flex items-center justify-center transition-all duration-500 ${
+                    isDarkMode 
+                      ? 'bg-white shadow-2xl shadow-white/20 hover:shadow-white/40' 
+                      : 'bg-slate-900 shadow-2xl shadow-slate-900/20 hover:shadow-slate-900/40'
+                  } hover:scale-110`}>
+                    <span className={`text-2xl ${isDarkMode ? 'text-slate-900' : 'text-white'}`}>💬</span>
                   </div>
                   <div>
-                    <h1 className={`text-xl font-bold ${
-                      isDarkMode ? 'text-white' : 'text-black'
+                    <h1 className={`text-2xl font-black tracking-tight ${
+                      isDarkMode ? 'text-white' : 'text-slate-900'
                     }`}>
                       Krizz
                     </h1>
-                    <p className={`text-sm ${
-                      isDarkMode ? 'text-gray-400' : 'text-gray-600'
+                    <p className={`text-sm font-medium ${
+                      isDarkMode ? 'text-slate-400' : 'text-slate-600'
                     }`}>
-                      
+                      Campus Connections
                     </p>
                   </div>
-                </div>
+                </button>
 
                 {/* Theme Toggle */}
                 <div className="flex items-center space-x-4">
-                  <div className="flex items-center space-x-2">
-                    <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  <div className="flex items-center space-x-3">
+                    <span className={`text-lg transition-all duration-300 ${
+                      isDarkMode ? 'text-slate-400' : 'text-slate-600'
+                    }`}>
                       ☀️
                     </span>
                     <button
                       onClick={() => setIsDarkMode(!isDarkMode)}
-                      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                      className={`relative inline-flex h-7 w-14 items-center rounded-full transition-all duration-500 focus:outline-none focus:ring-4 ${
                         isDarkMode 
-                          ? 'bg-white focus:ring-white/20' 
-                          : 'bg-gray-200 focus:ring-gray-500'
-                      } ${isDarkMode ? 'focus:ring-offset-black' : 'focus:ring-offset-white'}`}
+                          ? 'bg-white focus:ring-white/30 shadow-2xl shadow-white/20' 
+                          : 'bg-slate-200 focus:ring-slate-400/30 shadow-2xl shadow-slate-900/10'
+                      } ${isDarkMode ? 'focus:ring-offset-slate-900' : 'focus:ring-offset-white'}`}
                     >
                       <span
-                        className={`inline-block h-4 w-4 transform rounded-full transition-transform duration-300 ${
-                          isDarkMode ? 'translate-x-6 bg-black' : 'translate-x-1 bg-white'
+                        className={`inline-block h-5 w-5 transform rounded-full transition-all duration-500 ${
+                          isDarkMode ? 'translate-x-8 bg-slate-900' : 'translate-x-1 bg-white'
                         }`}
                       />
                     </button>
-                    <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    <span className={`text-lg transition-all duration-300 ${
+                      isDarkMode ? 'text-slate-400' : 'text-slate-600'
+                    }`}>
                       🌙
                     </span>
                   </div>
@@ -358,247 +405,341 @@ function App() {
           </header>
 
           {/* Main Content */}
-          <main className="flex-1 flex items-center justify-center min-h-[calc(100vh-4rem)]">
+          <main className={`flex-1 flex items-center justify-center w-full ${
+            state === STATES.CHATTING ? 'h-full px-0' : 
+            state === STATES.WELCOME ? 'h-full px-0' : 'h-[calc(100vh-5rem)] px-6'
+          }`}>
             {state === STATES.IDLE && (
-              <div className="w-full max-w-2xl mx-auto px-4 text-center">
-                {/* Main Title */}
-                <div className="mb-12 animate-fade-in-down">
-                  <h1 className={`text-6xl sm:text-7xl font-black mb-6 ${
-                    isDarkMode ? 'text-white' : 'text-black'
+              <div className="w-full max-w-4xl mx-auto text-center">
+                {/* Main Title Section */}
+                <div className="mb-16 animate-fade-in-down">
+                  <p className={`text-2xl sm:text-3xl font-medium max-w-3xl mx-auto leading-relaxed ${
+                    isDarkMode ? 'text-slate-300' : 'text-slate-600'
                   }`}>
-                    Krizz
-                  </h1>
-                  <p className={`text-xl sm:text-2xl font-medium ${
-                    isDarkMode ? 'text-gray-300' : 'text-gray-600'
-                  }`}>
-                    Add your interests and start a conversation with another student on campus.
+                    Connect with fellow students through shared interests and meaningful conversations
                   </p>
                 </div>
 
                 {/* Interest Setup Card */}
-                <div className={`w-full max-w-2xl p-10 rounded-3xl border-2 transition-all duration-300 ${
+                <div className={`w-full max-w-3xl mx-auto p-12 rounded-4xl transition-all duration-700 ${
                   isDarkMode
-                    ? 'bg-black border-gray-700 shadow-2xl shadow-white/5'
-                    : 'bg-white border-gray-200 shadow-2xl shadow-black/10'
+                    ? 'bg-black border border-gray-700 shadow-2xl shadow-white/5'
+                    : 'bg-white/80 border border-slate-200/50 shadow-2xl shadow-slate-900/20 backdrop-blur-2xl'
                 }`}>
-                  <h2 className={`text-3xl font-bold text-center mb-8 ${
-                    isDarkMode ? 'text-white' : 'text-black'
+                  <h2 className={`text-4xl font-black text-center mb-10 tracking-tight ${
+                    isDarkMode ? 'text-white' : 'text-slate-900'
                   }`}>
-                    Add Your Interests
+                    What interests you?
                   </h2>
                   
                   {/* Interest Input */}
-                  <div className="flex space-x-3 mb-10">
+                  <div className="flex space-x-4 mb-8">
+                    <div className="flex-1 relative">
+                      <div className={`px-8 py-5 rounded-2xl border-2 transition-all duration-300 focus-within:ring-4 ${
+                        isDarkMode
+                          ? 'bg-black border-gray-700 text-white focus-within:border-white focus-within:ring-white/20 shadow-lg'
+                          : 'bg-white border-slate-200 text-slate-900 focus-within:border-slate-900/50 focus-within:ring-slate-900/20 shadow-lg'
+                      }`}>
+                        {/* Selected Interests as Tags */}
+                        {selectedInterests.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mb-3">
+                            {selectedInterests.map((interest, index) => (
+                              <div
+                                key={index}
+                                className={`px-3 py-1 rounded-full flex items-center space-x-2 text-sm ${
+                                  isDarkMode 
+                                    ? 'bg-white text-black' 
+                                    : 'bg-slate-900 text-white'
+                                } font-medium`}
+                              >
+                                <span>{interest}</span>
+                                <button
+                                  onClick={() => removeInterest(index)}
+                                  className="w-4 h-4 rounded-full hover:bg-black/10 transition-colors flex items-center justify-center text-xs"
+                                >
+                                  ×
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        
+                        {/* Input Field */}
                     <input
                       type="text"
-                      placeholder="Type an interest..."
+                          placeholder="Add an interest (optional)"
                       value={interestInput}
                       onChange={(e) => setInterestInput(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && addInterest()}
-                      className={`flex-1 px-6 py-4 rounded-2xl border-2 transition-all duration-200 focus:outline-none focus:ring-4 ${
-                        isDarkMode
-                          ? 'bg-black border-gray-700 text-white placeholder-gray-400 focus:border-white focus:ring-white/10'
-                          : 'bg-white border-gray-200 text-gray-900 placeholder-gray-500 focus:border-black focus:ring-black/10'
+                          className={`w-full bg-transparent border-none outline-none text-lg placeholder-gray-400 ${
+                            isDarkMode ? 'text-white' : 'text-slate-900'
                       }`}
                     />
+                      </div>
+                    </div>
                     <button
                       onClick={addInterest}
                       disabled={!interestInput.trim()}
-                      className={`px-8 py-4 rounded-2xl font-bold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
+                      className={`px-10 py-5 rounded-2xl font-bold text-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
                         isDarkMode
-                          ? 'bg-white text-black hover:bg-gray-200'
-                          : 'bg-black text-white hover:bg-gray-800'
+                          ? 'bg-white text-slate-900 hover:bg-slate-100 shadow-2xl shadow-white/20 hover:shadow-white/40 hover:scale-105'
+                          : 'bg-slate-900 text-white hover:bg-slate-800 shadow-2xl shadow-slate-900/20 hover:shadow-slate-900/40 hover:scale-105'
                       }`}
                     >
                       Add
                     </button>
                   </div>
 
-                  {/* Selected Interests */}
-                  {selectedInterests.length > 0 && (
-                    <div className="mb-10">
-                      <h3 className={`text-xl font-semibold mb-6 ${
-                        isDarkMode ? 'text-white' : 'text-black'
-                      }`}>
-                        Your Interests
-                      </h3>
-                      <div className="flex flex-wrap gap-3 justify-center">
-                        {selectedInterests.map((interest, index) => (
-                          <div
-                            key={index}
-                            className={`px-6 py-3 rounded-full flex items-center space-x-3 ${
-                              isDarkMode ? 'bg-white text-black' : 'bg-black text-white'
-                            } font-medium shadow-lg`}
-                          >
-                            <span>{interest}</span>
-                            <button
-                              onClick={() => removeInterest(index)}
-                              className="w-6 h-6 rounded-full bg-black/10 hover:bg-black/20 transition-colors flex items-center justify-center"
-                            >
-                              ×
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Instruction */}
-                  <p className={`text-base mb-10 ${
-                    isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                  }`}>
-                    Add at least one interest to help find compatible chat partners
-                  </p>
-
                   {/* Start Chat Button */}
                   <button
                     onClick={handleStartChat}
-                    disabled={selectedInterests.length === 0 || isConnecting}
-                    className={`w-full py-5 px-8 rounded-2xl font-bold text-xl transition-all duration-300 ${
-                      selectedInterests.length === 0 || isConnecting
-                        ? 'bg-gray-400 cursor-not-allowed'
+                    disabled={isConnecting}
+                    className={`w-full py-6 px-8 rounded-3xl font-black text-2xl transition-all duration-500 ${
+                      isConnecting
+                        ? 'bg-slate-400 cursor-not-allowed'
                         : isDarkMode
-                          ? 'bg-white text-black hover:bg-gray-200 shadow-2xl'
-                          : 'bg-black text-white hover:bg-gray-800 shadow-2xl'
+                          ? 'bg-white text-slate-900 hover:bg-slate-100 shadow-2xl shadow-white/30 hover:shadow-white/50 hover:scale-105'
+                          : 'bg-slate-900 text-white hover:bg-slate-800 shadow-2xl shadow-slate-900/30 hover:shadow-slate-900/40 hover:scale-105'
                     }`}
                   >
                     {isConnecting ? 'Connecting...' : 'Start Chatting'}
                   </button>
+
+                  {/* Development Mode - Test Different States */}
+                  {process.env.NODE_ENV === 'development' && (
+                    <div className="mt-8 p-6 rounded-2xl border border-gray-600">
+                      <h3 className="text-lg font-bold text-gray-300 mb-4 text-center">🧪 Dev Mode - Test States</h3>
+                      <div className="grid grid-cols-2 gap-3">
+                        <button
+                          onClick={() => setState(STATES.WELCOME)}
+                          className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm hover:bg-blue-700 transition-colors"
+                        >
+                          Test Welcome
+                        </button>
+                        <button
+                          onClick={() => setState(STATES.CONNECTING)}
+                          className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm hover:bg-blue-700 transition-colors"
+                        >
+                          Test Connecting
+                        </button>
+                        <button
+                          onClick={() => setState(STATES.SEARCHING)}
+                          className="px-4 py-2 rounded-xl bg-yellow-600 text-white text-sm hover:bg-yellow-700 transition-colors"
+                        >
+                          Test Searching
+                        </button>
+                        <button
+                          onClick={() => setState(STATES.CHATTING)}
+                          className="px-4 py-2 rounded-xl bg-green-600 text-white text-sm hover:bg-green-700 transition-colors"
+                        >
+                          Test Chatting
+                        </button>
+                        <button
+                          onClick={() => setState(STATES.DISCONNECTED)}
+                          className="px-4 py-2 rounded-xl bg-red-600 text-white text-sm hover:bg-red-700 transition-colors"
+                        >
+                          Test Disconnected
+                        </button>
+                        <button
+                          onClick={() => setState(STATES.BACKEND_ERROR)}
+                          className="px-4 py-2 rounded-xl bg-red-800 text-white text-sm hover:bg-red-900 transition-colors"
+                        >
+                          Test Backend Error
+                        </button>
+                        <button
+                          onClick={() => setState(STATES.IDLE)}
+                          className="px-4 py-2 rounded-xl bg-gray-600 text-white text-sm hover:bg-gray-700 transition-colors"
+                        >
+                          Back to Idle
+                        </button>
+                        <button
+                          onClick={() => setState(STATES.WELCOME)}
+                          className="px-4 py-2 rounded-xl bg-purple-600 text-white text-sm hover:bg-purple-700 transition-colors"
+                        >
+                          Back to Welcome
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
 
-            {state !== STATES.IDLE && (
-              <div className="w-full max-w-4xl mx-auto">
-                <div className={`rounded-2xl shadow-2xl p-6 sm:p-8 ${
-                  isDarkMode ? 'bg-gray-800/90' : 'bg-white/90'
-                } backdrop-blur-lg border ${
-                  isDarkMode ? 'border-gray-700' : 'border-gray-200'
-                }`}>
+            {state === STATES.WELCOME && (
+              <div className="fixed inset-0 bg-black flex flex-col items-center justify-center text-center z-10 px-6">
+                <h1 className="text-4xl font-black mb-4 text-white">
+                  Welcome to Krizz
+                </h1>
+                
+                <p className="text-lg font-medium mb-8 text-white">
+                  Please read the rules below before starting your chat
+                </p>
+
+                <h2 className="text-2xl font-bold mb-6 text-white">
+                  Campus Chat Rules
+                </h2>
+                
+                <div className="mb-8 space-y-3 max-w-2xl w-full">
+                  <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-4">
+                    <p className="text-lg font-bold text-red-400">
+                      Must be a current student with valid campus access
+                    </p>
+                  </div>
+                  
+                  <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4">
+                    <p className="text-lg text-white">
+                      No inappropriate content or conversations
+                    </p>
+                  </div>
+                  
+                  <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4">
+                    <p className="text-lg text-white">
+                      Be respectful and kind to fellow students
+                    </p>
+                  </div>
+                  
+                  <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4">
+                    <p className="text-lg text-white">
+                      No sharing of personal information
+                    </p>
+                  </div>
+                  
+                  <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4">
+                    <p className="text-lg text-white">
+                      Breaking any rules results in a permanent ban
+                    </p>
+                  </div>
+                </div>
+
+                <button
+                  onClick={handleStartConnection}
+                  className="bg-white text-black py-4 px-12 rounded-2xl font-black text-xl hover:bg-gray-100 transition-all duration-300 hover:scale-105"
+                >
+                  Start Chat
+                </button>
+              </div>
+            )}
+
+            {state === STATES.CHATTING && (
+              <div className="w-full h-full">
+                {/* Shared Interests Display */}
+                {sharedInterests.length > 0 && (
+                  <div className={`mb-8 p-8 rounded-3xl border-2 text-center ${
+                    isDarkMode
+                      ? 'bg-black border-gray-700 shadow-2xl shadow-white/5'
+                      : 'bg-slate-100/50 border-slate-200/50 shadow-2xl shadow-slate-900/20'
+                  }`}>
+                    <h3 className={`text-2xl font-bold mb-4 ${
+                      isDarkMode ? 'text-white' : 'text-slate-900'
+                    }`}>
+                      🎯 You both are interested in:
+                    </h3>
+                    <div className="flex flex-wrap justify-center gap-3">
+                      {sharedInterests.map((interest, index) => (
+                        <span
+                          key={index}
+                          className={`px-6 py-3 rounded-2xl text-lg font-semibold ${
+                            isDarkMode
+                              ? 'bg-white text-slate-900 shadow-lg shadow-white/20'
+                              : 'bg-slate-900 text-white shadow-lg shadow-slate-900/20'
+                          }`}
+                        >
+                          {interest}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                <ChatBox 
+                  messages={messages} 
+                  onSendMessage={handleSendMessage} 
+                  onDisconnect={handleDisconnect}
+                  onNewChat={handleNewChat}
+                  isDarkMode={isDarkMode}
+                />
+              </div>
+            )}
+
+            {state !== STATES.IDLE && state !== STATES.CHATTING && (
+              <div className="w-full max-w-5xl mx-auto">
+                <div className={`rounded-4xl shadow-2xl p-8 sm:p-12 transition-all duration-700 ${
+                  isDarkMode 
+                    ? 'bg-black border border-gray-700 shadow-white/5' 
+                    : 'bg-white/80 border border-slate-200/50 shadow-slate-900/20'
+                } backdrop-blur-2xl`}>
                   {state === STATES.CONNECTING && (
-                    <div className="text-center py-16">
-                      <div className={`text-2xl font-semibold mb-6 ${
-                        isDarkMode ? 'text-white' : 'text-gray-800'
-                      }`}>Connecting to server...</div>
-                      <div className="flex justify-center">
-                        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-purple-500"></div>
+                    <div className="text-center py-20">
+                      <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full mb-8 ${
+                        isDarkMode 
+                          ? 'bg-white/10 border-2 border-white/20' 
+                          : 'bg-slate-900/10 border-2 border-slate-900/20'
+                      }`}>
+                        <div className="animate-spin rounded-full h-12 w-12 border-4 border-transparent border-t-white border-r-white/50"></div>
                       </div>
+                      <div className={`text-3xl font-bold mb-6 ${
+                        isDarkMode ? 'text-white' : 'text-slate-900'
+                      }`}>Connecting to server...</div>
+                      <p className={`text-lg ${
+                        isDarkMode ? 'text-slate-400' : 'text-slate-600'
+                      }`}>Please wait while we establish your connection</p>
                     </div>
                   )}
                   {state === STATES.SEARCHING && (
-                    <div className="text-center py-16">
-                      <div className={`text-2xl font-semibold mb-6 ${
-                        isDarkMode ? 'text-white' : 'text-gray-800'
+                    <div className="text-center py-20">
+                      <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full mb-8 ${
+                        isDarkMode 
+                          ? 'bg-white/10 border-2 border-white/20' 
+                          : 'bg-slate-900/10 border-2 border-slate-900/20'
+                      }`}>
+                        <span className="text-4xl">🔍</span>
+                      </div>
+                      <div className={`text-3xl font-bold mb-6 ${
+                        isDarkMode ? 'text-white' : 'text-slate-900'
                       }`}>Looking for someone to chat with...</div>
                       
-                      {/* Real-time Stats */}
-                      <div className={`mb-8 p-6 rounded-2xl ${
-                        isDarkMode ? 'bg-gray-700/50' : 'bg-gray-100/50'
-                      } backdrop-blur-sm border ${
-                        isDarkMode ? 'border-gray-600' : 'border-gray-200'
-                      }`}>
-                        <h3 className={`text-lg font-semibold mb-4 ${
-                          isDarkMode ? 'text-white' : 'text-gray-800'
-                        }`}>Live Activity</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                          <div className="text-center">
-                            <div className={`text-2xl font-bold ${
-                              isDarkMode ? 'text-green-400' : 'text-green-600'
-                            }`}>
-                              {onlineStats.onlineUsers || 0}
-                            </div>
-                            <div className={`text-sm ${
-                              isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                            }`}>Online Now</div>
+                      {/* Online Count */}
+                      <div className={`mb-12 p-8 rounded-3xl ${
+                        isDarkMode ? 'bg-black border border-gray-700' : 'bg-slate-100/50 border border-slate-200/50'
+                      } backdrop-blur-sm`}>
+                        <div className="text-center">
+                          <div className={`text-4xl font-black mb-2 ${
+                            isDarkMode ? 'text-emerald-400' : 'text-emerald-600'
+                          }`}>
+                            {onlineStats.onlineUsers || 0}
                           </div>
-                          <div className="text-center">
-                            <div className={`text-2xl font-bold ${
-                              isDarkMode ? 'text-blue-400' : 'text-blue-600'
-                            }`}>
-                              {onlineStats.waitingUsers || 0}
-                            </div>
-                            <div className={`text-sm ${
-                              isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                            }`}>Looking for Chat</div>
-                          </div>
-                          <div className="text-center">
-                            <div className={`text-2xl font-bold ${
-                              isDarkMode ? 'text-purple-400' : 'text-purple-600'
-                            }`}>
-                              {onlineStats.activeChats || 0}
-                            </div>
-                            <div className={`text-sm ${
-                              isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                            }`}>Active Chats</div>
-                          </div>
+                          <div className={`text-lg font-medium ${
+                            isDarkMode ? 'text-slate-400' : 'text-slate-600'
+                          }`}>People Online Now</div>
                         </div>
                       </div>
                       
                       <div className="flex justify-center">
-                        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-purple-500"></div>
-                      </div>
-                      
-                      {/* Encouraging Message */}
-                      <div className={`mt-6 text-sm ${
-                        isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                      }`}>
-                        {onlineStats.waitingUsers > 1 
-                          ? `You're not alone! ${onlineStats.waitingUsers - 1} other people are also looking for a chat.`
-                          : "You're the first one here! More people will join soon."
-                        }
+                        <div className="animate-spin rounded-full h-16 w-16 border-4 border-transparent border-t-white border-r-white/50"></div>
                       </div>
                     </div>
                   )}
-                  {state === STATES.CHATTING && (
-                    <>
-                      {/* Shared Interests Display */}
-                      {sharedInterests.length > 0 && (
-                        <div className={`mb-6 p-6 rounded-2xl border-2 text-center ${
-                          isDarkMode
-                            ? 'bg-black border-gray-700 shadow-2xl shadow-white/5'
-                            : 'bg-white border-gray-200 shadow-2xl shadow-black/10'
-                        }`}>
-                          <h3 className={`text-xl font-bold mb-3 ${
-                            isDarkMode ? 'text-white' : 'text-black'
-                          }`}>
-                            🎯 You both are interested in:
-                          </h3>
-                          <div className="flex flex-wrap justify-center gap-2">
-                            {sharedInterests.map((interest, index) => (
-                              <span
-                                key={index}
-                                className={`px-4 py-2 rounded-full text-sm font-medium ${
-                                  isDarkMode
-                                    ? 'bg-white text-black'
-                                    : 'bg-black text-white'
-                                }`}
-                              >
-                                {interest}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      
-                      <ChatBox 
-                        messages={messages} 
-                        onSendMessage={handleSendMessage} 
-                        onDisconnect={handleDisconnect}
-                        isDarkMode={isDarkMode}
-                      />
-                    </>
-                  )}
                   {state === STATES.DISCONNECTED && (
-                    <div className="text-center py-16">
-                      <div className={`text-2xl font-semibold mb-6 ${
+                    <div className="text-center py-20">
+                      <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full mb-8 ${
+                        isDarkMode 
+                          ? 'bg-red-500/20 border-2 border-red-500/30' 
+                          : 'bg-red-100 border-2 border-red-200'
+                      }`}>
+                        <span className="text-4xl">😔</span>
+                      </div>
+                      <div className={`text-3xl font-bold mb-6 ${
                         isDarkMode ? 'text-red-400' : 'text-red-600'
                       }`}>Stranger left the chat.</div>
+                      <p className={`text-lg mb-8 ${
+                        isDarkMode ? 'text-slate-400' : 'text-slate-600'
+                      }`}>Don't worry! You can start a new conversation anytime.</p>
                       <button
                         onClick={handleStartChat}
-                        className={`px-6 py-3 rounded-xl font-semibold transition-all duration-200 ${
+                        className={`px-8 py-4 rounded-2xl font-bold text-lg transition-all duration-300 ${
                           isDarkMode 
-                            ? 'bg-purple-600 hover:bg-purple-700 text-white' 
-                            : 'bg-blue-600 hover:bg-blue-700 text-white'
+                            ? 'bg-white text-slate-900 hover:bg-slate-100 shadow-2xl shadow-white/20 hover:shadow-white/40 hover:scale-105' 
+                            : 'bg-slate-900 text-white hover:bg-slate-800 shadow-2xl shadow-slate-900/20 hover:shadow-slate-900/40 hover:scale-105'
                         }`}
                       >
                         Start New Chat
@@ -606,19 +747,26 @@ function App() {
                     </div>
                   )}
                   {state === STATES.BACKEND_ERROR && (
-                    <div className="text-center py-16">
-                      <div className={`text-2xl font-semibold mb-6 ${
+                    <div className="text-center py-20">
+                      <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full mb-8 ${
+                        isDarkMode 
+                          ? 'bg-red-500/20 border-2 border-red-500/30' 
+                          : 'bg-red-100 border-2 border-red-200'
+                      }`}>
+                        <span className="text-4xl">⚠️</span>
+                      </div>
+                      <div className={`text-3xl font-bold mb-6 ${
                         isDarkMode ? 'text-red-400' : 'text-red-600'
-                      }`}>Could not connect to the backend server.</div>
+                      }`}>Connection Error</div>
                       <p className={`text-lg mb-8 ${
-                        isDarkMode ? 'text-gray-400' : 'text-gray-600'
-                      }`}>Please ensure the backend is running and accessible.</p>
+                        isDarkMode ? 'text-slate-400' : 'text-slate-600'
+                      }`}>Could not connect to the server. Please check your connection and try again.</p>
                       <button
                         onClick={handleStartChat}
-                        className={`px-6 py-3 rounded-xl font-semibold transition-all duration-200 ${
+                        className={`px-8 py-4 rounded-2xl font-bold text-lg transition-all duration-300 ${
                           isDarkMode 
-                            ? 'bg-purple-600 hover:bg-purple-700 text-white' 
-                            : 'bg-blue-600 hover:bg-blue-700 text-white'
+                            ? 'bg-white text-slate-900 hover:bg-slate-100 shadow-2xl shadow-white/20 hover:shadow-white/40 hover:scale-105' 
+                            : 'bg-slate-900 text-white hover:bg-slate-800 shadow-2xl shadow-slate-900/20 hover:shadow-slate-900/40 hover:scale-105'
                         }`}
                       >
                         Retry Connection

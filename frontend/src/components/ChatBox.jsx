@@ -1,7 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-const ChatBox = ({ messages, onSendMessage, onDisconnect, isDarkMode }) => {
+const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode }) => {
   const [inputText, setInputText] = useState('');
+  const [buttonState, setButtonState] = useState('stop'); // 'stop', 'really', 'new'
+  const [clickCount, setClickCount] = useState(0);
+  const [lastClickTime, setLastClickTime] = useState(0);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -25,6 +28,87 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, isDarkMode }) => {
     }
   };
 
+  const handleLeftButtonClick = () => {
+    const currentTime = Date.now();
+    
+    if (buttonState === 'stop') {
+      // First click: change to "Really?"
+      setButtonState('really');
+      setClickCount(1);
+      setLastClickTime(currentTime);
+    } else if (buttonState === 'really') {
+      // Second click: confirm disconnect
+      onDisconnect();
+      setButtonState('new');
+      setClickCount(2);
+      setLastClickTime(currentTime);
+    } else if (buttonState === 'new') {
+      // New state: start new chat
+      // This would trigger a new connection
+      onNewChat();
+      setButtonState('stop');
+      setClickCount(0);
+    }
+  };
+
+  // Check for rapid clicking (3-4 times quickly)
+  useEffect(() => {
+    if (clickCount >= 3 && buttonState === 'really') {
+      const timeDiff = Date.now() - lastClickTime;
+      if (timeDiff < 2000) { // Within 2 seconds
+        setButtonState('new');
+        setClickCount(0);
+      }
+    }
+  }, [clickCount, lastClickTime, buttonState]);
+
+  // Reset button state after some time if not clicked
+  useEffect(() => {
+    if (buttonState === 'really') {
+      const timer = setTimeout(() => {
+        if (buttonState === 'really') {
+          setButtonState('stop');
+          setClickCount(0);
+        }
+      }, 5000); // 5 seconds to confirm
+      
+      return () => clearTimeout(timer);
+    }
+  }, [buttonState]);
+
+  const getButtonText = () => {
+    switch (buttonState) {
+      case 'stop':
+        return (
+          <div className="text-center">
+            <div className="text-base font-bold">Stop</div>
+            <div className="text-xs text-blue-400">Esc</div>
+          </div>
+        );
+      case 'really':
+        return (
+          <div className="text-center">
+            <div className="text-base font-bold">Really?</div>
+            <div className="text-xs text-blue-400">Esc</div>
+          </div>
+        );
+      case 'new':
+        return (
+          <div className="text-center">
+            <div className="text-base font-bold">New...</div>
+            <div className="text-xs text-blue-400">Esc</div>
+          </div>
+        );
+      default:
+        return (
+          <div className="text-center">
+            <div className="text-base font-bold">Stop</div>
+            <div className="text-xs text-blue-400">Esc</div>
+          </div>
+        );
+    }
+  };
+
   const formatTime = (timestamp) => {
     return new Date(timestamp).toLocaleTimeString([], { 
       hour: '2-digit', 
@@ -33,41 +117,31 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, isDarkMode }) => {
   };
 
   return (
-    <div className="h-[600px] sm:h-[700px] flex flex-col">
-      {/* Header */}
-      <div className={`flex items-center justify-between p-4 border-b ${
-        isDarkMode ? 'border-gray-700' : 'border-gray-200'
-      }`}>
+    <div className="h-full w-full flex flex-col bg-black">
+      {/* Minimalist Header */}
+      <div className="flex items-center justify-between p-4 border-b border-gray-800">
         <div className="flex items-center space-x-3">
-          <div className={`w-3 h-3 rounded-full ${
-            isDarkMode ? 'bg-green-400' : 'bg-green-500'
-          } animate-pulse`}></div>
-          <span className={`font-semibold ${
-            isDarkMode ? 'text-white' : 'text-gray-800'
-          }`}>
-            Connected with stranger
-          </span>
+          <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
+          <div>
+            <span className="text-white font-medium">You're now chatting with a random stranger</span>
+            <div className="text-sm text-gray-400">India 🇮🇳</div>
+          </div>
         </div>
         <button
           onClick={onDisconnect}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-            isDarkMode 
-              ? 'bg-red-600 hover:bg-red-700 text-white' 
-              : 'bg-red-500 hover:bg-red-600 text-white'
-          }`}
+          className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors"
         >
           Disconnect
         </button>
       </div>
 
-      {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      {/* Chat Messages Area */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {messages.length === 0 ? (
-          <div className={`text-center py-8 ${
-            isDarkMode ? 'text-gray-400' : 'text-gray-500'
-          }`}>
-            <p className="text-lg">Start the conversation!</p>
-            <p className="text-sm mt-2">Send a message to begin chatting</p>
+          <div className="text-center py-20">
+            <div className="text-6xl mb-4">💬</div>
+            <p className="text-xl font-semibold text-white mb-2">Start the conversation!</p>
+            <p className="text-gray-400">Send a message to begin chatting</p>
           </div>
         ) : (
           messages.map((message, index) => (
@@ -75,21 +149,15 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, isDarkMode }) => {
               key={index}
               className={`flex ${message.from === 'me' ? 'justify-end' : 'justify-start'}`}
             >
-              <div className={`max-w-xs sm:max-w-md lg:max-w-lg px-4 py-2 rounded-2xl ${
+              <div className={`max-w-xs sm:max-w-md px-4 py-2 rounded-lg ${
                 message.from === 'me'
-                  ? isDarkMode 
-                    ? 'bg-purple-600 text-white' 
-                    : 'bg-blue-600 text-white'
-                  : isDarkMode 
-                    ? 'bg-gray-700 text-white' 
-                    : 'bg-gray-200 text-gray-800'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-red-600 text-white'
               }`}>
-                <p className="text-sm sm:text-base break-words">{message.text}</p>
-                <p className={`text-xs mt-1 opacity-70 ${
-                  message.from === 'me' ? 'text-purple-100' : 'text-gray-400'
-                }`}>
-                  {formatTime(message.timestamp)}
-                </p>
+                <div className="text-sm font-medium mb-1">
+                  {message.from === 'me' ? 'You' : 'Stranger'}
+                </div>
+                <p className="text-sm">{message.text}</p>
               </div>
             </div>
           ))
@@ -97,36 +165,52 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, isDarkMode }) => {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Form */}
-      <form onSubmit={handleSubmit} className={`p-4 border-t ${
-        isDarkMode ? 'border-gray-700' : 'border-gray-200'
-      }`}>
-        <div className="flex space-x-3">
+      {/* Minimalist Bottom Bar */}
+      <div className="bg-gray-900 border-t border-gray-800 p-4">
+        <form onSubmit={handleSubmit} className="flex items-center space-x-3">
+          <button
+            type="button"
+            onClick={handleLeftButtonClick}
+            className="px-4 py-3 rounded-lg bg-gray-800 text-white text-sm hover:bg-gray-700 transition-colors border border-gray-700"
+          >
+            {getButtonText()}
+          </button>
+          
           <input
             ref={inputRef}
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             placeholder="Type your message..."
-            className={`flex-1 px-4 py-3 rounded-xl border-2 transition-all duration-200 focus:outline-none focus:ring-2 ${
-              isDarkMode
-                ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-purple-500 focus:ring-purple-500/20'
-                : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500/20'
-            }`}
+            className="flex-1 px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
           />
+          
+          <button
+            type="button"
+            className="px-3 py-2 rounded-lg bg-gray-800 text-white text-sm hover:bg-gray-700 transition-colors"
+          >
+            GIF
+          </button>
+          
+          <button
+            type="button"
+            className="px-3 py-2 rounded-lg bg-gray-800 text-white text-sm hover:bg-gray-700 transition-colors"
+          >
+            😊
+          </button>
+          
           <button
             type="submit"
             disabled={!inputText.trim()}
-            className={`px-6 py-3 rounded-xl font-semibold transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
-              isDarkMode
-                ? 'bg-purple-600 hover:bg-purple-700 text-white'
-                : 'bg-blue-600 hover:bg-blue-700 text-white'
-            }`}
+            className="px-4 py-3 rounded-lg bg-gray-800 text-white text-sm hover:bg-gray-700 transition-colors disabled:opacity-50 border border-gray-700"
           >
-            Send
+            <div className="text-center">
+              <div className="text-base font-bold">Send</div>
+              <div className="text-xs text-blue-400">Enter</div>
+            </div>
           </button>
-        </div>
-      </form>
+        </form>
+      </div>
     </div>
   );
 };
