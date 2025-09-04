@@ -740,6 +740,7 @@ function AppContent() {
                         onNewChat={handleNewChat}
                         isDarkMode={isDarkMode}
                         onStrangerTyping={isStrangerTyping}
+                        socket={socket}
                       />
               </div>
             )}

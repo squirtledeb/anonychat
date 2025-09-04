@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode, onStrangerTyping }) => {
+const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode, onStrangerTyping, socket }) => {
   const [inputText, setInputText] = useState('');
   const [buttonState, setButtonState] = useState('stop'); // 'stop', 'really', 'new'
   const [clickCount, setClickCount] = useState(0);
   const [lastClickTime, setLastClickTime] = useState(0);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showGifPicker, setShowGifPicker] = useState(false);
+  const [selectedEmojiCategory, setSelectedEmojiCategory] = useState('smileys');
   const [gifSearchQuery, setGifSearchQuery] = useState('');
   const [gifs, setGifs] = useState([]);
   const [isLoadingGifs, setIsLoadingGifs] = useState(false);
@@ -101,8 +102,33 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
 
   const handleInputChange = (e) => {
     setInputText(e.target.value);
-    // Note: We don't show typing indicator for local user typing
-    // The typing indicator should only show when stranger is typing
+    
+    // Emit typing events to let the stranger know we're typing
+    if (socket && e.target.value.trim()) {
+      // User started typing
+      socket.emit('user_typing');
+      
+      // Clear existing timeout
+      if (typingTimeout) {
+        clearTimeout(typingTimeout);
+      }
+      
+      // Set timeout to stop typing after 1 second of no activity
+      const newTimeout = setTimeout(() => {
+        if (socket) {
+          socket.emit('user_stopped_typing');
+        }
+      }, 1000);
+      
+      setTypingTimeout(newTimeout);
+    } else if (socket && !e.target.value.trim()) {
+      // User cleared input, stop typing
+      socket.emit('user_stopped_typing');
+      if (typingTimeout) {
+        clearTimeout(typingTimeout);
+        setTypingTimeout(null);
+      }
+    }
   };
 
   const handleGIFClick = () => {
@@ -116,8 +142,8 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
   const loadRandomGifs = async () => {
     setIsLoadingGifs(true);
     try {
-      // Try Giphy API first, but with better error handling
-      const response = await fetch('https://api.giphy.com/v1/gifs/trending?api_key=dc6zaTOxFJmzC&limit=8&rating=g', {
+      // Use Tenor API instead of Giphy for better reliability
+      const response = await fetch('https://tenor.googleapis.com/v2/featured?key=AIzaSyAyimkuYQYF_FXVALexPuGQctUWRURdCYQ&limit=12&media_filter=gif', {
         mode: 'cors',
         headers: {
           'Accept': 'application/json',
@@ -126,55 +152,67 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
       
       if (response.ok) {
         const data = await response.json();
-        if (data.data && data.data.length > 0) {
-          const gifs = data.data.map(gif => ({
+        if (data.results && data.results.length > 0) {
+          const gifs = data.results.map(gif => ({
             id: gif.id,
-            url: gif.images.original.url,
-            title: gif.title || 'GIF',
-            preview: gif.images.fixed_height_small.url || gif.images.original.url
+            url: gif.media_formats.gif.url,
+            title: gif.content_description || 'GIF',
+            preview: gif.media_formats.tinygif?.url || gif.media_formats.gif.url
           }));
           setGifs(gifs);
           return;
         }
       }
       
-      // If API fails, use diverse fallback GIFs with different URLs
+      // If API fails, use diverse fallback GIFs
       const fallbackGifs = [
         {
           id: 'gif1',
-          url: 'https://media.giphy.com/media/3o7btPCcdNniyf0ArS/giphy.gif',
-          title: 'Happy Wednesday',
-          preview: 'https://media.giphy.com/media/3o7btPCcdNniyf0ArS/giphy.gif'
+          url: 'https://media.tenor.com/images/a617137e5e8a4f5e8b3e9f8b1a1b1b1b/tenor.gif',
+          title: 'Happy',
+          preview: 'https://media.tenor.com/images/a617137e5e8a4f5e8b3e9f8b1a1b1b1b/tenor.gif'
         },
         {
           id: 'gif2',
-          url: 'https://media.giphy.com/media/26BRrSvJUa5yIYQgU/giphy.gif',
-          title: 'Good Morning',
-          preview: 'https://media.giphy.com/media/26BRrSvJUa5yIYQgU/giphy.gif'
+          url: 'https://media.tenor.com/images/b617137e5e8a4f5e8b3e9f8b1a1b1b1c/tenor.gif',
+          title: 'Excited',
+          preview: 'https://media.tenor.com/images/b617137e5e8a4f5e8b3e9f8b1a1b1b1c/tenor.gif'
         },
         {
           id: 'gif3',
-          url: 'https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif',
-          title: 'Happy Humpday!',
-          preview: 'https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif'
+          url: 'https://media.tenor.com/images/c617137e5e8a4f5e8b3e9f8b1a1b1b1d/tenor.gif',
+          title: 'Funny',
+          preview: 'https://media.tenor.com/images/c617137e5e8a4f5e8b3e9f8b1a1b1b1d/tenor.gif'
         },
         {
           id: 'gif4',
-          url: 'https://media.giphy.com/media/3o7btPCcdNniyf0ArS/giphy.gif',
-          title: 'Hello Hump Day',
-          preview: 'https://media.giphy.com/media/3o7btPCcdNniyf0ArS/giphy.gif'
+          url: 'https://media.tenor.com/images/d617137e5e8a4f5e8b3e9f8b1a1b1b1e/tenor.gif',
+          title: 'Cool',
+          preview: 'https://media.tenor.com/images/d617137e5e8a4f5e8b3e9f8b1a1b1b1e/tenor.gif'
         },
         {
           id: 'gif5',
-          url: 'https://media.giphy.com/media/26BRrSvJUa5yIYQgU/giphy.gif',
-          title: 'Have a Great Day',
-          preview: 'https://media.giphy.com/media/26BRrSvJUa5yIYQgU/giphy.gif'
+          url: 'https://media.tenor.com/images/e617137e5e8a4f5e8b3e9f8b1a1b1b1f/tenor.gif',
+          title: 'Awesome',
+          preview: 'https://media.tenor.com/images/e617137e5e8a4f5e8b3e9f8b1a1b1b1f/tenor.gif'
         },
         {
           id: 'gif6',
-          url: 'https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif',
-          title: 'Smile More',
-          preview: 'https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif'
+          url: 'https://media.tenor.com/images/f617137e5e8a4f5e8b3e9f8b1a1b1b20/tenor.gif',
+          title: 'Amazing',
+          preview: 'https://media.tenor.com/images/f617137e5e8a4f5e8b3e9f8b1a1b1b20/tenor.gif'
+        },
+        {
+          id: 'gif7',
+          url: 'https://media.tenor.com/images/g617137e5e8a4f5e8b3e9f8b1a1b1b21/tenor.gif',
+          title: 'Great',
+          preview: 'https://media.tenor.com/images/g617137e5e8a4f5e8b3e9f8b1a1b1b21/tenor.gif'
+        },
+        {
+          id: 'gif8',
+          url: 'https://media.tenor.com/images/h617137e5e8a4f5e8b3e9f8b1a1b1b22/tenor.gif',
+          title: 'Perfect',
+          preview: 'https://media.tenor.com/images/h617137e5e8a4f5e8b3e9f8b1a1b1b22/tenor.gif'
         }
       ];
       setGifs(fallbackGifs);
@@ -184,27 +222,27 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
       const fallbackGifs = [
         {
           id: 'error1',
-          url: 'https://media.giphy.com/media/3o7btPCcdNniyf0ArS/giphy.gif',
-          title: 'Happy Wednesday',
-          preview: 'https://media.giphy.com/media/3o7btPCcdNniyf0ArS/giphy.gif'
+          url: 'https://media.tenor.com/images/a617137e5e8a4f5e8b3e9f8b1a1b1b1b/tenor.gif',
+          title: 'Happy',
+          preview: 'https://media.tenor.com/images/a617137e5e8a4f5e8b3e9f8b1a1b1b1b/tenor.gif'
         },
         {
           id: 'error2',
-          url: 'https://media.giphy.com/media/26BRrSvJUa5yIYQgU/giphy.gif',
-          title: 'Good Morning',
-          preview: 'https://media.giphy.com/media/26BRrSvJUa5yIYQgU/giphy.gif'
+          url: 'https://media.tenor.com/images/b617137e5e8a4f5e8b3e9f8b1a1b1b1c/tenor.gif',
+          title: 'Excited',
+          preview: 'https://media.tenor.com/images/b617137e5e8a4f5e8b3e9f8b1a1b1b1c/tenor.gif'
         },
         {
           id: 'error3',
-          url: 'https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif',
-          title: 'Happy Humpday!',
-          preview: 'https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif'
+          url: 'https://media.tenor.com/images/c617137e5e8a4f5e8b3e9f8b1a1b1b1d/tenor.gif',
+          title: 'Funny',
+          preview: 'https://media.tenor.com/images/c617137e5e8a4f5e8b3e9f8b1a1b1b1d/tenor.gif'
         },
         {
           id: 'error4',
-          url: 'https://media.giphy.com/media/3o7btPCcdNniyf0ArS/giphy.gif',
-          title: 'Hello Hump Day',
-          preview: 'https://media.giphy.com/media/3o7btPCcdNniyf0ArS/giphy.gif'
+          url: 'https://media.tenor.com/images/d617137e5e8a4f5e8b3e9f8b1a1b1b1e/tenor.gif',
+          title: 'Cool',
+          preview: 'https://media.tenor.com/images/d617137e5e8a4f5e8b3e9f8b1a1b1b1e/tenor.gif'
         }
       ];
       setGifs(fallbackGifs);
@@ -221,9 +259,9 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
     
     setIsLoadingGifs(true);
     try {
-      // Try Giphy search API
+      // Use Tenor search API
       const encodedQuery = encodeURIComponent(query);
-      const response = await fetch(`https://api.giphy.com/v1/gifs/search?api_key=dc6zaTOxFJmzC&q=${encodedQuery}&limit=8&rating=g`, {
+      const response = await fetch(`https://tenor.googleapis.com/v2/search?key=AIzaSyAyimkuYQYF_FXVALexPuGQctUWRURdCYQ&q=${encodedQuery}&limit=12&media_filter=gif`, {
         mode: 'cors',
         headers: {
           'Accept': 'application/json',
@@ -232,12 +270,12 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
       
       if (response.ok) {
         const data = await response.json();
-        if (data.data && data.data.length > 0) {
-          const gifs = data.data.map(gif => ({
+        if (data.results && data.results.length > 0) {
+          const gifs = data.results.map(gif => ({
             id: gif.id,
-            url: gif.images.original.url,
-            title: gif.title || query,
-            preview: gif.images.fixed_height_small.url || gif.images.original.url
+            url: gif.media_formats.gif.url,
+            title: gif.content_description || query,
+            preview: gif.media_formats.tinygif?.url || gif.media_formats.gif.url
           }));
           setGifs(gifs);
           return;
@@ -248,27 +286,51 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
       const fallbackGifs = [
         {
           id: `search1_${query}`,
-          url: 'https://media.giphy.com/media/3o7btPCcdNniyf0ArS/giphy.gif',
-          title: `Search result for "${query}"`,
-          preview: 'https://media.giphy.com/media/3o7btPCcdNniyf0ArS/giphy.gif'
+          url: 'https://media.tenor.com/images/search1_example.gif',
+          title: `${query} - Result 1`,
+          preview: 'https://media.tenor.com/images/search1_example.gif'
         },
         {
           id: `search2_${query}`,
-          url: 'https://media.giphy.com/media/26BRrSvJUa5yIYQgU/giphy.gif',
-          title: `Another result for "${query}"`,
-          preview: 'https://media.giphy.com/media/26BRrSvJUa5yIYQgU/giphy.gif'
+          url: 'https://media.tenor.com/images/search2_example.gif',
+          title: `${query} - Result 2`,
+          preview: 'https://media.tenor.com/images/search2_example.gif'
         },
         {
           id: `search3_${query}`,
-          url: 'https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif',
-          title: `More "${query}" content`,
-          preview: 'https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif'
+          url: 'https://media.tenor.com/images/search3_example.gif',
+          title: `${query} - Result 3`,
+          preview: 'https://media.tenor.com/images/search3_example.gif'
         },
         {
           id: `search4_${query}`,
-          url: 'https://media.giphy.com/media/3o7btPCcdNniyf0ArS/giphy.gif',
-          title: `Best "${query}" GIF`,
-          preview: 'https://media.giphy.com/media/3o7btPCcdNniyf0ArS/giphy.gif'
+          url: 'https://media.tenor.com/images/search4_example.gif',
+          title: `${query} - Result 4`,
+          preview: 'https://media.tenor.com/images/search4_example.gif'
+        },
+        {
+          id: `search5_${query}`,
+          url: 'https://media.tenor.com/images/search5_example.gif',
+          title: `${query} - Result 5`,
+          preview: 'https://media.tenor.com/images/search5_example.gif'
+        },
+        {
+          id: `search6_${query}`,
+          url: 'https://media.tenor.com/images/search6_example.gif',
+          title: `${query} - Result 6`,
+          preview: 'https://media.tenor.com/images/search6_example.gif'
+        },
+        {
+          id: `search7_${query}`,
+          url: 'https://media.tenor.com/images/search7_example.gif',
+          title: `${query} - Result 7`,
+          preview: 'https://media.tenor.com/images/search7_example.gif'
+        },
+        {
+          id: `search8_${query}`,
+          url: 'https://media.tenor.com/images/search8_example.gif',
+          title: `${query} - Result 8`,
+          preview: 'https://media.tenor.com/images/search8_example.gif'
         }
       ];
       setGifs(fallbackGifs);
@@ -278,15 +340,27 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
       const fallbackGifs = [
         {
           id: `error1_${query}`,
-          url: 'https://media.giphy.com/media/3o7btPCcdNniyf0ArS/giphy.gif',
-          title: `Search result for "${query}"`,
-          preview: 'https://media.giphy.com/media/3o7btPCcdNniyf0ArS/giphy.gif'
+          url: 'https://media.tenor.com/images/error1_example.gif',
+          title: `${query} - Search Result`,
+          preview: 'https://media.tenor.com/images/error1_example.gif'
         },
         {
           id: `error2_${query}`,
-          url: 'https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif',
-          title: `Another result for "${query}"`,
-          preview: 'https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif'
+          url: 'https://media.tenor.com/images/error2_example.gif',
+          title: `${query} - Another Result`,
+          preview: 'https://media.tenor.com/images/error2_example.gif'
+        },
+        {
+          id: `error3_${query}`,
+          url: 'https://media.tenor.com/images/error3_example.gif',
+          title: `${query} - More Results`,
+          preview: 'https://media.tenor.com/images/error3_example.gif'
+        },
+        {
+          id: `error4_${query}`,
+          url: 'https://media.tenor.com/images/error4_example.gif',
+          title: `${query} - Best Result`,
+          preview: 'https://media.tenor.com/images/error4_example.gif'
         }
       ];
       setGifs(fallbackGifs);
@@ -421,7 +495,7 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
       </div>
 
       {/* Chat Messages Area */}
-      <div className="flex-1 overflow-y-auto p-2 sm:p-4 pb-4 sm:pb-6 space-y-3 min-h-0">
+      <div className="flex-1 overflow-y-auto px-2 sm:px-4 py-4 sm:py-6 pb-6 sm:pb-8 space-y-3 min-h-0">
         {messages.length === 0 ? (
           <div className="text-center py-12 sm:py-20">
             <div className="text-4xl sm:text-6xl mb-4">💬</div>
@@ -438,7 +512,9 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
                 message.from === 'me'
                   ? 'bg-blue-600 text-white'
                   : message.from === 'system'
-                  ? 'bg-gray-700 text-gray-300'
+                  ? message.text.includes('You both like:') 
+                    ? 'bg-green-600/20 border border-green-500/30 text-green-400' 
+                    : 'bg-gray-700 text-gray-300'
                   : 'bg-gray-600/50 text-white'
               }`}>
                 {message.from !== 'system' && (
@@ -456,6 +532,13 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
                       className="max-w-full h-auto rounded-lg"
                       style={{ maxHeight: '200px' }}
                     />
+                  </div>
+                ) : message.from === 'system' && message.text.includes('You both like:') ? (
+                  <div className="text-center">
+                    <div className="flex items-center justify-center mb-2">
+                      <span className="text-lg">🤝</span>
+                    </div>
+                    <p className="text-sm font-medium">{message.text}</p>
                   </div>
                 ) : (
                   <p className="text-sm sm:text-sm break-words">{message.text}</p>
@@ -545,114 +628,141 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
 
       {/* Emoji Picker */}
       {showEmojiPicker && (
-        <div data-emoji-picker className="absolute bottom-20 right-4 bg-gray-800 border border-gray-700 rounded-lg p-4 shadow-2xl z-50">
-          <div className="grid grid-cols-6 gap-2">
+        <div data-emoji-picker className="absolute bottom-20 right-4 bg-gray-800 border border-gray-700 rounded-lg shadow-2xl z-50 w-80 h-80">
+          {/* Category Tabs */}
+          <div className="flex border-b border-gray-700 p-2">
             {[
-              // Row 1: Happy faces
-              '😀', '😂', '😊', '😍', '🤔', '😎',
-              // Row 2: Celebrations and reactions
-              '🥳', '👍', '❤️', '🔥', '😢', '😡',
-              // Row 3: Expressions and achievements
-              '🤯', '💯', '🎉', '🚀', '💪', '👏',
-              // Row 4: Positive reactions
-              '🙌', '🤝', '💖', '🌟', '✨', '🎯',
-              // Row 5: Special items
-              '💎', '🎊', '🎈', '🎁', '🏆', '🎂',
-              // Row 6: More expressions
-              '😘', '😜', '🤪', '😇', '🥰', '😋',
-              // Row 7: Additional reactions
-              '🤨', '😏', '😒', '🙄', '😬', '🤐',
-              // Row 8: More emotions
-              '😴', '🤤', '😪', '🤢', '🤮', '🤧',
-              // Row 9: Weather and nature
-              '☀️', '🌙', '⭐', '🌈', '☁️', '❄️',
-              // Row 10: Animals
-              '🐶', '🐱', '🐭', '🐹', '🐰', '🦊',
-              // Row 11: More animals
-              '🐻', '🐼', '🐨', '🐯', '🦁', '🐮',
-              // Row 12: Food and drinks
-              '🍕', '🍔', '🍟', '🌭', '🥪', '🌮',
-              // Row 13: More food
-              '🍜', '🍱', '🍣', '🍤', '🍙', '🍚',
-              // Row 14: Drinks and desserts
-              '☕', '🍵', '🥤', '🍺', '🍷', '🍰',
-              // Row 15: Activities and sports
-              '⚽', '🏀', '🏈', '⚾', '🎾', '🏐',
-              // Row 16: More sports
-              '🏓', '🏸', '🏒', '🏑', '🎯', '🏹',
-              // Row 17: Music and entertainment
-              '🎵', '🎶', '🎤', '🎧', '🎸', '🎹',
-              // Row 18: More entertainment
-              '🎭', '🎪', '🎨', '🎬', '📺', '🎮',
-              // Row 19: Technology and objects
-              '📱', '💻', '⌚', '📷', '📹', '🎥',
-              // Row 20: More objects
-              '📚', '📖', '✏️', '✒️', '🖊️', '🖋️',
-              // Row 21: Travel and transportation
-              '✈️', '🚁', '🚀', '🚗', '🚙', '🚌',
-              // Row 22: More transportation
-              '🚲', '🏍️', '🚂', '🚆', '🚇', '🚊',
-              // Row 23: Buildings and places
-              '🏠', '🏡', '🏢', '🏣', '🏤', '🏥',
-              // Row 24: More places
-              '🏦', '🏨', '🏩', '🏪', '🏫', '🏬',
-              // Row 25: Nature and plants
-              '🌱', '🌿', '🍀', '🌾', '🌵', '🌲',
-              // Row 26: More nature
-              '🌳', '🌴', '🌰', '🌺', '🌻', '🌷',
-              // Row 27: Hand gestures
-              '👋', '🤚', '🖐️', '✋', '🖖', '👌',
-              // Row 28: More gestures
-              '🤏', '✌️', '🤞', '🤟', '🤘', '🤙',
-              // Row 29: Body parts
-              '👀', '👁️', '👂', '👃', '👄', '👅',
-              // Row 30: More body parts
-              '🦷', '🦴', '👶', '🧒', '👦', '👧',
-              // Row 31: People
-              '👨', '👩', '🧑', '👴', '👵', '👱',
-              // Row 32: More people
-              '👲', '🧔', '👳', '👮', '👷', '💂',
-              // Row 33: Clothing
-              '👕', '👖', '🧥', '🧦', '👗', '👘',
-              // Row 34: More clothing
-              '👙', '👚', '👛', '👜', '👝', '🎒',
-              // Row 35: Accessories
-              '👞', '👟', '👠', '👡', '👢', '👑',
-              // Row 36: More accessories
-              '👒', '🎩', '🎓', '🧢', '⛑️', '💍',
-              // Row 37: Symbols and signs
-              '💎', '🔮', '🔭', '🔬', '📡', '💻',
-              // Row 38: More symbols
-              '📱', '☎️', '📞', '📟', '📠', '🔋',
-              // Row 39: Tools and equipment
-              '🔧', '🔨', '⚒️', '🛠️', '⚙️', '🔩',
-              // Row 40: More tools
-              '⚖️', '🔗', '⛓️', '🧰', '🧲', '⚗️',
-              // Row 41: Medical and science
-              '🧪', '🧫', '🧬', '🦠', '💊', '💉',
-              // Row 42: More medical
-              '🩹', '🩺', '🚑', '🚨', '🚔', '🚓',
-              // Row 43: Flags and countries
-              '🏁', '🚩', '🎌', '🏴', '🏳️', '🏳️‍🌈',
-              // Row 44: More flags
-              '🏳️‍⚧️', '🏴‍☠️', '🇺🇸', '🇬🇧', '🇨🇦', '🇦🇺',
-              // Row 45: Even more flags
-              '🇫🇷', '🇩🇪', '🇯🇵', '🇰🇷', '🇨🇳', '🇮🇳',
-              // Row 46: Additional flags
-              '🇧🇷', '🇷🇺', '🇮🇹', '🇪🇸', '🇲🇽', '🇳🇱',
-              // Row 47: More miscellaneous
-              '🎊', '🎉', '🎈', '🎁', '🎀', '🎂',
-              // Row 48: Final row
-              '🍰', '🧁', '🍪', '🍩', '🍫', '🍬'
-            ].map((emoji, index) => (
+              { id: 'smileys', icon: '😊', name: 'Smileys' },
+              { id: 'people', icon: '👋', name: 'People' },
+              { id: 'animals', icon: '🐶', name: 'Animals' },
+              { id: 'food', icon: '🍕', name: 'Food' },
+              { id: 'activities', icon: '⚽', name: 'Activities' },
+              { id: 'travel', icon: '✈️', name: 'Travel' },
+              { id: 'objects', icon: '💻', name: 'Objects' },
+              { id: 'symbols', icon: '❤️', name: 'Symbols' },
+              { id: 'flags', icon: '🏁', name: 'Flags' }
+            ].map((category) => (
               <button
-                key={index}
-                onClick={() => handleEmojiSelect(emoji)}
-                className="p-2 hover:bg-gray-700 rounded-lg text-xl transition-colors"
+                key={category.id}
+                onClick={() => setSelectedEmojiCategory(category.id)}
+                className={`p-2 rounded text-lg hover:bg-gray-700 transition-colors ${
+                  selectedEmojiCategory === category.id ? 'bg-gray-600' : ''
+                }`}
+                title={category.name}
               >
-                {emoji}
+                {category.icon}
               </button>
             ))}
+          </div>
+
+          {/* Emoji Grid */}
+          <div className="h-64 overflow-y-auto p-2">
+            <div className="grid grid-cols-8 gap-1">
+              {(() => {
+                const emojiCategories = {
+                  smileys: [
+                    '😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂',
+                    '🙂', '🙃', '😉', '😊', '😇', '🥰', '😍', '🤩',
+                    '😘', '😗', '☺️', '😚', '😙', '🥲', '😋', '😛',
+                    '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔',
+                    '🤐', '🤨', '😐', '😑', '😶', '😏', '😒', '🙄',
+                    '😬', '🤥', '😔', '😪', '🤤', '😴', '😷', '🤒',
+                    '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '🥴', '😵',
+                    '🤯', '🤠', '🥳', '😎', '🤓', '🧐', '😕', '😟'
+                  ],
+                  people: [
+                    '👋', '🤚', '🖐️', '✋', '🖖', '👌', '🤏', '✌️',
+                    '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '🖕',
+                    '👇', '☝️', '👍', '👎', '👊', '✊', '🤛', '🤜',
+                    '👏', '🙌', '👐', '🤲', '🤝', '🙏', '✍️', '💅',
+                    '🤳', '💪', '🦾', '🦿', '🦵', '🦶', '👂', '🦻',
+                    '👃', '🧠', '🦷', '🦴', '👀', '👁️', '👅', '👄',
+                    '👶', '🧒', '👦', '👧', '🧑', '👱', '👨', '🧔',
+                    '👩', '🧓', '👴', '👵', '🙍', '🙎', '🙅', '🙆'
+                  ],
+                  animals: [
+                    '🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼',
+                    '🐨', '🐯', '🦁', '🐮', '🐷', '🐽', '🐸', '🐵',
+                    '🙈', '🙉', '🙊', '🐒', '🐔', '🐧', '🐦', '🐤',
+                    '🐣', '🐥', '🦆', '🦅', '🦉', '🦇', '🐺', '🐗',
+                    '🐴', '🦄', '🐝', '🐛', '🦋', '🐌', '🐞', '🐜',
+                    '🦟', '🦗', '🕷️', '🕸️', '🦂', '🐢', '🐍', '🦎',
+                    '🦖', '🦕', '🐙', '🦑', '🦐', '🦞', '🦀', '🐡',
+                    '🐠', '🐟', '🐬', '🐳', '🐋', '🦈', '🐊', '🐅'
+                  ],
+                  food: [
+                    '🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓',
+                    '🫐', '🍈', '🍒', '🍑', '🥭', '🍍', '🥥', '🥝',
+                    '🍅', '🍆', '🥑', '🥦', '🥬', '🥒', '🌶️', '🫑',
+                    '🌽', '🥕', '🫒', '🧄', '🧅', '🥔', '🍠', '🥐',
+                    '🥯', '🍞', '🥖', '🥨', '🧀', '🥚', '🍳', '🧈',
+                    '🥞', '🧇', '🥓', '🥩', '🍗', '🍖', '🦴', '🌭',
+                    '🍔', '🍟', '🍕', '🥪', '🥙', '🧆', '🌮', '🌯',
+                    '🫔', '🥗', '🥘', '🫕', '🍝', '🍜', '🍲', '🍛'
+                  ],
+                  activities: [
+                    '⚽', '🏀', '🏈', '⚾', '🥎', '🎾', '🏐', '🏉',
+                    '🥏', '🎱', '🪀', '🏓', '🏸', '🏒', '🏑', '🥍',
+                    '🏏', '🪃', '🥅', '⛳', '🪁', '🏹', '🎣', '🤿',
+                    '🥊', '🥋', '🎽', '🛹', '🛷', '⛸️', '🥌', '🎿',
+                    '⛷️', '🏂', '🪂', '🏋️', '🤼', '🤸', '⛹️', '🤺',
+                    '🏇', '🧘', '🏄', '🏊', '🤽', '🚣', '🧗', '🚵',
+                    '🚴', '🏆', '🥇', '🥈', '🥉', '🏅', '🎖️', '🏵️',
+                    '🎗️', '🎫', '🎟️', '🎪', '🤹', '🎭', '🩰', '🎨'
+                  ],
+                  travel: [
+                    '🚗', '🚕', '🚙', '🚌', '🚎', '🏎️', '🚓', '🚑',
+                    '🚒', '🚐', '🛻', '🚚', '🚛', '🚜', '🏍️', '🛵',
+                    '🚲', '🛴', '🛹', '🛼', '🚁', '🛸', '✈️', '🛩️',
+                    '🪂', '💺', '🚀', '🛰️', '🚢', '⛵', '🚤', '🛥️',
+                    '🛳️', '⛴️', '🚂', '🚃', '🚄', '🚅', '🚆', '🚇',
+                    '🚈', '🚉', '🚊', '🚝', '🚞', '🚋', '🚌', '🚍',
+                    '🚎', '🚐', '🚑', '🚒', '🚓', '🚔', '🚕', '🚖',
+                    '🚗', '🚘', '🚙', '🛻', '🚚', '🚛', '🚜', '🏍️'
+                  ],
+                  objects: [
+                    '⌚', '📱', '📲', '💻', '⌨️', '🖥️', '🖨️', '🖱️',
+                    '🖲️', '🕹️', '🗜️', '💽', '💾', '💿', '📀', '📼',
+                    '📷', '📸', '📹', '🎥', '📽️', '🎞️', '📞', '☎️',
+                    '📟', '📠', '📺', '📻', '🎙️', '🎚️', '🎛️', '🧭',
+                    '⏱️', '⏲️', '⏰', '🕰️', '⌛', '⏳', '📡', '🔋',
+                    '🔌', '💡', '🔦', '🕯️', '🪔', '🧯', '🛢️', '💸',
+                    '💵', '💴', '💶', '💷', '🪙', '💰', '💳', '💎',
+                    '⚖️', '🪜', '🧰', '🔧', '🔨', '⚒️', '🛠️', '⛏️'
+                  ],
+                  symbols: [
+                    '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍',
+                    '🤎', '💔', '❣️', '💕', '💞', '💓', '💗', '💖',
+                    '💘', '💝', '💟', '☮️', '✝️', '☪️', '🕉️', '☸️',
+                    '✡️', '🔯', '🕎', '☯️', '☦️', '🛐', '⛎', '♈',
+                    '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐',
+                    '♑', '♒', '♓', '🆔', '⚛️', '🉑', '☢️', '☣️',
+                    '📴', '📳', '🈶', '🈚', '🈸', '🈺', '🈷️', '✴️',
+                    '🆚', '💮', '🉐', '㊙️', '㊗️', '🈴', '🈵', '🈹'
+                  ],
+                  flags: [
+                    '🏁', '🚩', '🎌', '🏴', '🏳️', '🏳️‍🌈', '🏳️‍⚧️', '🏴‍☠️',
+                    '🇦🇨', '🇦🇩', '🇦🇪', '🇦🇫', '🇦🇬', '🇦🇮', '🇦🇱', '🇦🇲',
+                    '🇦🇴', '🇦🇶', '🇦🇷', '🇦🇸', '🇦🇹', '🇦🇺', '🇦🇼', '🇦🇽',
+                    '🇦🇿', '🇧🇦', '🇧🇧', '🇧🇩', '🇧🇪', '🇧🇫', '🇧🇬', '🇧🇭',
+                    '🇧🇮', '🇧🇯', '🇧🇱', '🇧🇲', '🇧🇳', '🇧🇴', '🇧🇶', '🇧🇷',
+                    '🇧🇸', '🇧🇹', '🇧🇻', '🇧🇼', '🇧🇾', '🇧🇿', '🇨🇦', '🇨🇨',
+                    '🇨🇩', '🇨🇫', '🇨🇬', '🇨🇭', '🇨🇮', '🇨🇰', '🇨🇱', '🇨🇲',
+                    '🇨🇳', '🇨🇴', '🇨🇵', '🇨🇷', '🇨🇺', '🇨🇻', '🇨🇼', '🇨🇽'
+                  ]
+                };
+                
+                return emojiCategories[selectedEmojiCategory] || [];
+              })().map((emoji, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleEmojiSelect(emoji)}
+                  className="p-2 hover:bg-gray-700 rounded text-lg transition-colors"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}
