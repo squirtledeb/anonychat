@@ -101,6 +101,17 @@ function App() {
         setState(STATES.CHATTING);
         setMessages([]); // Clear previous messages
         setSharedInterests(interests || []); // Store shared interests
+        
+        // Add shared interests message to chat
+        if (interests && interests.length > 0) {
+          const interestsText = interests.join(', ');
+          setMessages([{ 
+            text: `You both like: ${interestsText}`, 
+            from: 'system', 
+            timestamp: Date.now() 
+          }]);
+        }
+        
         setIsConnecting(false);
       });
 
@@ -622,34 +633,6 @@ function App() {
 
                   {state === STATES.CHATTING && (
               <div className="w-full h-full">
-                      {/* Shared Interests Display */}
-                      {sharedInterests.length > 0 && (
-                  <div className={`mb-8 p-8 rounded-3xl border-2 text-center ${
-                          isDarkMode
-                            ? 'bg-black border-gray-700 shadow-2xl shadow-white/5'
-                      : 'bg-slate-100/50 border-slate-200/50 shadow-2xl shadow-slate-900/20'
-                        }`}>
-                    <h3 className={`text-2xl font-bold mb-4 ${
-                      isDarkMode ? 'text-white' : 'text-slate-900'
-                          }`}>
-                            🎯 You both are interested in:
-                          </h3>
-                    <div className="flex flex-wrap justify-center gap-3">
-                            {sharedInterests.map((interest, index) => (
-                              <span
-                                key={index}
-                          className={`px-6 py-3 rounded-2xl text-lg font-semibold ${
-                                  isDarkMode
-                              ? 'bg-white text-slate-900 shadow-lg shadow-white/20'
-                              : 'bg-slate-900 text-white shadow-lg shadow-slate-900/20'
-                                }`}
-                              >
-                                {interest}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-                      )}
                       
                       <ChatBox 
                         messages={messages} 

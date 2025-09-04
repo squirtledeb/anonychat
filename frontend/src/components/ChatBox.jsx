@@ -124,7 +124,6 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode 
           <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-green-500 animate-pulse flex-shrink-0"></div>
           <div className="min-w-0 flex-1">
             <span className="text-white font-medium text-sm sm:text-base block sm:inline">You're now chatting with a random stranger</span>
-            <div className="text-xs sm:text-sm text-gray-400">India 🇮🇳</div>
           </div>
         </div>
         <button
@@ -147,16 +146,20 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode 
           messages.map((message, index) => (
             <div
               key={index}
-              className={`flex ${message.from === 'me' ? 'justify-end' : 'justify-start'}`}
+              className={`flex ${message.from === 'me' ? 'justify-end' : message.from === 'system' ? 'justify-center' : 'justify-start'}`}
             >
               <div className={`max-w-[85%] sm:max-w-xs lg:max-w-md px-3 py-2 sm:px-4 sm:py-2 rounded-lg ${
                 message.from === 'me'
                   ? 'bg-blue-600 text-white'
+                  : message.from === 'system'
+                  ? 'bg-gray-700 text-gray-300'
                   : 'bg-red-600 text-white'
               }`}>
-                <div className="text-xs sm:text-sm font-medium mb-1">
-                  {message.from === 'me' ? 'You' : 'Stranger'}
-                </div>
+                {message.from !== 'system' && (
+                  <div className="text-xs sm:text-sm font-medium mb-1">
+                    {message.from === 'me' ? 'You' : 'Stranger'}
+                  </div>
+                )}
                 <p className="text-sm sm:text-sm break-words">{message.text}</p>
               </div>
             </div>
@@ -166,7 +169,7 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode 
       </div>
 
       {/* Minimalist Bottom Bar */}
-      <div className="bg-gray-900 border-t border-gray-800 p-3 sm:p-4">
+      <div className="bg-black p-3 sm:p-4">
         <form onSubmit={handleSubmit} className="flex items-center space-x-2 sm:space-x-3">
           <button
             type="button"
