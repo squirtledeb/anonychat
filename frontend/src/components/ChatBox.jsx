@@ -119,19 +119,13 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode 
   return (
     <div className="h-full w-full flex flex-col bg-black">
       {/* Minimalist Header */}
-      <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-800">
-        <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
+      <div className="flex items-center justify-center p-3 sm:p-4 border-b border-gray-800">
+        <div className="flex items-center space-x-2 sm:space-x-3">
           <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-green-500 animate-pulse flex-shrink-0"></div>
-          <div className="min-w-0 flex-1">
-            <span className="text-white font-medium text-sm sm:text-base block sm:inline">You're now chatting with a random stranger</span>
+          <div>
+            <span className="text-white font-medium text-sm sm:text-base">You're now chatting with a random stranger</span>
           </div>
         </div>
-        <button
-          onClick={onDisconnect}
-          className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg bg-red-600 text-white text-xs sm:text-sm font-medium hover:bg-red-700 transition-colors flex-shrink-0"
-        >
-          Disconnect
-        </button>
       </div>
 
       {/* Chat Messages Area */}
@@ -168,49 +162,41 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode 
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Minimalist Bottom Bar */}
-      <div className="bg-black p-3 sm:p-4">
-        <form onSubmit={handleSubmit} className="flex items-center space-x-2 sm:space-x-3">
+      {/* Bottom Input Bar - Uhmegle Style */}
+      <div className="bg-black p-3 sm:p-4 border-t border-gray-800">
+        <form onSubmit={handleSubmit} className="flex items-center space-x-3">
+          {/* Start Button - Left */}
           <button
             type="button"
             onClick={handleLeftButtonClick}
-            className="px-3 py-2 sm:px-4 sm:py-3 rounded-lg bg-gray-800 text-white text-xs sm:text-sm hover:bg-gray-700 transition-colors border border-gray-700 flex-shrink-0"
+            className="px-4 py-3 rounded-lg bg-gray-800 text-white text-sm hover:bg-gray-700 transition-colors border border-gray-700 flex-shrink-0"
           >
             {getButtonText()}
           </button>
           
+          {/* Input Field - Center */}
           <input
             ref={inputRef}
             type="text"
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             placeholder="Type your message..."
-            className="flex-1 px-3 py-2 sm:px-4 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 text-sm sm:text-base"
+            className="flex-1 px-4 py-3 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 text-sm"
           />
           
+          {/* GIF and Emoji Buttons - Right */}
           <button
             type="button"
-            className="px-2 py-2 sm:px-3 sm:py-2 rounded-lg bg-gray-800 text-white text-xs sm:text-sm hover:bg-gray-700 transition-colors flex-shrink-0"
+            className="px-3 py-3 rounded-lg bg-gray-800 text-white text-sm hover:bg-gray-700 transition-colors flex-shrink-0"
           >
             GIF
           </button>
           
           <button
             type="button"
-            className="px-2 py-2 sm:px-3 sm:py-2 rounded-lg bg-gray-800 text-white text-xs sm:text-sm hover:bg-gray-700 transition-colors flex-shrink-0"
+            className="px-3 py-3 rounded-lg bg-gray-800 text-white text-sm hover:bg-gray-700 transition-colors flex-shrink-0"
           >
             😊
-          </button>
-          
-          <button
-            type="submit"
-            disabled={!inputText.trim()}
-            className="px-3 py-2 sm:px-4 sm:py-3 rounded-lg bg-gray-800 text-white text-xs sm:text-sm hover:bg-gray-700 transition-colors disabled:opacity-50 border border-gray-700 flex-shrink-0"
-          >
-            <div className="text-center">
-              <div className="text-sm sm:text-base font-bold">Send</div>
-              <div className="text-xs text-blue-400">Enter</div>
-            </div>
           </button>
         </form>
       </div>
