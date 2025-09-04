@@ -81,28 +81,28 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode 
       case 'stop':
         return (
           <div className="text-center">
-            <div className="text-base font-bold">Stop</div>
+            <div className="text-sm sm:text-base font-bold">Stop</div>
             <div className="text-xs text-blue-400">Esc</div>
           </div>
         );
       case 'really':
         return (
           <div className="text-center">
-            <div className="text-base font-bold">Really?</div>
+            <div className="text-sm sm:text-base font-bold">Really?</div>
             <div className="text-xs text-blue-400">Esc</div>
           </div>
         );
       case 'new':
         return (
           <div className="text-center">
-            <div className="text-base font-bold">New...</div>
+            <div className="text-sm sm:text-base font-bold">New...</div>
             <div className="text-xs text-blue-400">Esc</div>
           </div>
         );
       default:
         return (
           <div className="text-center">
-            <div className="text-base font-bold">Stop</div>
+            <div className="text-sm sm:text-base font-bold">Stop</div>
             <div className="text-xs text-blue-400">Esc</div>
           </div>
         );
@@ -119,29 +119,29 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode 
   return (
     <div className="h-full w-full flex flex-col bg-black">
       {/* Minimalist Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-800">
-        <div className="flex items-center space-x-3">
-          <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
-          <div>
-            <span className="text-white font-medium">You're now chatting with a random stranger</span>
-            <div className="text-sm text-gray-400">India 🇮🇳</div>
+      <div className="flex items-center justify-between p-3 sm:p-4 border-b border-gray-800">
+        <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
+          <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-green-500 animate-pulse flex-shrink-0"></div>
+          <div className="min-w-0 flex-1">
+            <span className="text-white font-medium text-sm sm:text-base block sm:inline">You're now chatting with a random stranger</span>
+            <div className="text-xs sm:text-sm text-gray-400">India 🇮🇳</div>
           </div>
         </div>
         <button
           onClick={onDisconnect}
-          className="px-4 py-2 rounded-lg bg-red-600 text-white text-sm font-medium hover:bg-red-700 transition-colors"
+          className="px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg bg-red-600 text-white text-xs sm:text-sm font-medium hover:bg-red-700 transition-colors flex-shrink-0"
         >
           Disconnect
         </button>
       </div>
 
       {/* Chat Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3">
         {messages.length === 0 ? (
-          <div className="text-center py-20">
-            <div className="text-6xl mb-4">💬</div>
-            <p className="text-xl font-semibold text-white mb-2">Start the conversation!</p>
-            <p className="text-gray-400">Send a message to begin chatting</p>
+          <div className="text-center py-12 sm:py-20">
+            <div className="text-4xl sm:text-6xl mb-4">💬</div>
+            <p className="text-lg sm:text-xl font-semibold text-white mb-2">Start the conversation!</p>
+            <p className="text-sm sm:text-base text-gray-400">Send a message to begin chatting</p>
           </div>
         ) : (
           messages.map((message, index) => (
@@ -149,15 +149,15 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode 
               key={index}
               className={`flex ${message.from === 'me' ? 'justify-end' : 'justify-start'}`}
             >
-              <div className={`max-w-xs sm:max-w-md px-4 py-2 rounded-lg ${
+              <div className={`max-w-[85%] sm:max-w-xs lg:max-w-md px-3 py-2 sm:px-4 sm:py-2 rounded-lg ${
                 message.from === 'me'
                   ? 'bg-blue-600 text-white'
                   : 'bg-red-600 text-white'
               }`}>
-                <div className="text-sm font-medium mb-1">
+                <div className="text-xs sm:text-sm font-medium mb-1">
                   {message.from === 'me' ? 'You' : 'Stranger'}
                 </div>
-                <p className="text-sm">{message.text}</p>
+                <p className="text-sm sm:text-sm break-words">{message.text}</p>
               </div>
             </div>
           ))
@@ -166,12 +166,12 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode 
       </div>
 
       {/* Minimalist Bottom Bar */}
-      <div className="bg-gray-900 border-t border-gray-800 p-4">
-        <form onSubmit={handleSubmit} className="flex items-center space-x-3">
+      <div className="bg-gray-900 border-t border-gray-800 p-3 sm:p-4">
+        <form onSubmit={handleSubmit} className="flex items-center space-x-2 sm:space-x-3">
           <button
             type="button"
             onClick={handleLeftButtonClick}
-            className="px-4 py-3 rounded-lg bg-gray-800 text-white text-sm hover:bg-gray-700 transition-colors border border-gray-700"
+            className="px-3 py-2 sm:px-4 sm:py-3 rounded-lg bg-gray-800 text-white text-xs sm:text-sm hover:bg-gray-700 transition-colors border border-gray-700 flex-shrink-0"
           >
             {getButtonText()}
           </button>
@@ -182,19 +182,19 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode 
             value={inputText}
             onChange={(e) => setInputText(e.target.value)}
             placeholder="Type your message..."
-            className="flex-1 px-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+            className="flex-1 px-3 py-2 sm:px-4 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 text-sm sm:text-base"
           />
           
           <button
             type="button"
-            className="px-3 py-2 rounded-lg bg-gray-800 text-white text-sm hover:bg-gray-700 transition-colors"
+            className="px-2 py-2 sm:px-3 sm:py-2 rounded-lg bg-gray-800 text-white text-xs sm:text-sm hover:bg-gray-700 transition-colors flex-shrink-0"
           >
             GIF
           </button>
           
           <button
             type="button"
-            className="px-3 py-2 rounded-lg bg-gray-800 text-white text-sm hover:bg-gray-700 transition-colors"
+            className="px-2 py-2 sm:px-3 sm:py-2 rounded-lg bg-gray-800 text-white text-xs sm:text-sm hover:bg-gray-700 transition-colors flex-shrink-0"
           >
             😊
           </button>
@@ -202,10 +202,10 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode 
           <button
             type="submit"
             disabled={!inputText.trim()}
-            className="px-4 py-3 rounded-lg bg-gray-800 text-white text-sm hover:bg-gray-700 transition-colors disabled:opacity-50 border border-gray-700"
+            className="px-3 py-2 sm:px-4 sm:py-3 rounded-lg bg-gray-800 text-white text-xs sm:text-sm hover:bg-gray-700 transition-colors disabled:opacity-50 border border-gray-700 flex-shrink-0"
           >
             <div className="text-center">
-              <div className="text-base font-bold">Send</div>
+              <div className="text-sm sm:text-base font-bold">Send</div>
               <div className="text-xs text-blue-400">Enter</div>
             </div>
           </button>

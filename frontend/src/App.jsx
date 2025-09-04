@@ -343,27 +343,27 @@ function App() {
               ? 'bg-black/95 border-gray-800' 
               : 'bg-white/80 border-slate-200/50 shadow-2xl shadow-slate-900/10'
           }`}>
-            <div className="max-w-7xl mx-auto px-6 lg:px-8">
-              <div className="flex items-center justify-between h-20">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="flex items-center justify-between h-16 sm:h-20">
                 {/* Logo */}
                 <button 
                   onClick={() => setState(STATES.IDLE)}
-                  className="flex items-center space-x-4 hover:opacity-80 transition-opacity duration-300"
+                  className="flex items-center space-x-2 sm:space-x-4 hover:opacity-80 transition-opacity duration-300"
                 >
-                  <div className={`w-12 h-12 rounded-3xl flex items-center justify-center transition-all duration-500 ${
+                  <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-3xl flex items-center justify-center transition-all duration-500 ${
                     isDarkMode 
                       ? 'bg-white shadow-2xl shadow-white/20 hover:shadow-white/40' 
                       : 'bg-slate-900 shadow-2xl shadow-slate-900/20 hover:shadow-slate-900/40'
                   } hover:scale-110`}>
-                    <span className={`text-2xl ${isDarkMode ? 'text-slate-900' : 'text-white'}`}>💬</span>
+                    <span className={`text-xl sm:text-2xl ${isDarkMode ? 'text-slate-900' : 'text-white'}`}>💬</span>
                   </div>
                   <div>
-                    <h1 className={`text-2xl font-black tracking-tight ${
+                    <h1 className={`text-lg sm:text-2xl font-black tracking-tight ${
                       isDarkMode ? 'text-white' : 'text-slate-900'
                     }`}>
                       Krizz
                     </h1>
-                    <p className={`text-sm font-medium ${
+                    <p className={`text-xs sm:text-sm font-medium ${
                       isDarkMode ? 'text-slate-400' : 'text-slate-600'
                     }`}>
                       Campus Connections
@@ -372,28 +372,28 @@ function App() {
                 </button>
 
                 {/* Theme Toggle */}
-                <div className="flex items-center space-x-4">
-                  <div className="flex items-center space-x-3">
-                    <span className={`text-lg transition-all duration-300 ${
+                <div className="flex items-center space-x-2 sm:space-x-4">
+                  <div className="flex items-center space-x-2 sm:space-x-3">
+                    <span className={`text-sm sm:text-lg transition-all duration-300 ${
                       isDarkMode ? 'text-slate-400' : 'text-slate-600'
                     }`}>
                       ☀️
                     </span>
                     <button
                       onClick={() => setIsDarkMode(!isDarkMode)}
-                      className={`relative inline-flex h-7 w-14 items-center rounded-full transition-all duration-500 focus:outline-none focus:ring-4 ${
+                      className={`relative inline-flex h-6 w-12 sm:h-7 sm:w-14 items-center rounded-full transition-all duration-500 focus:outline-none focus:ring-4 ${
                         isDarkMode 
                           ? 'bg-white focus:ring-white/30 shadow-2xl shadow-white/20' 
                           : 'bg-slate-200 focus:ring-slate-400/30 shadow-2xl shadow-slate-900/10'
                       } ${isDarkMode ? 'focus:ring-offset-slate-900' : 'focus:ring-offset-white'}`}
                     >
                       <span
-                        className={`inline-block h-5 w-5 transform rounded-full transition-all duration-500 ${
-                          isDarkMode ? 'translate-x-8 bg-slate-900' : 'translate-x-1 bg-white'
+                        className={`inline-block h-4 w-4 sm:h-5 sm:w-5 transform rounded-full transition-all duration-500 ${
+                          isDarkMode ? 'translate-x-6 sm:translate-x-8 bg-slate-900' : 'translate-x-1 bg-white'
                         }`}
                       />
                     </button>
-                    <span className={`text-lg transition-all duration-300 ${
+                    <span className={`text-sm sm:text-lg transition-all duration-300 ${
                       isDarkMode ? 'text-slate-400' : 'text-slate-600'
                     }`}>
                       🌙
@@ -407,7 +407,7 @@ function App() {
           {/* Main Content */}
           <main className={`flex-1 flex items-center justify-center w-full ${
             state === STATES.CHATTING ? 'h-full px-0' : 
-            state === STATES.WELCOME ? 'h-full px-0' : 'h-[calc(100vh-5rem)] px-6'
+            state === STATES.WELCOME ? 'h-full px-0' : 'h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] px-4 sm:px-6'
           }`}>
             {state === STATES.IDLE && (
               <div className="w-full max-w-4xl mx-auto text-center">
@@ -566,98 +566,98 @@ function App() {
             )}
 
             {state === STATES.WELCOME && (
-              <div className="fixed inset-0 bg-black flex flex-col items-center justify-center text-center z-10 px-6">
-                <h1 className="text-4xl font-black mb-4 text-white">
+              <div className="fixed inset-0 bg-black flex flex-col items-center justify-center text-center z-10 px-4 sm:px-6">
+                <h1 className="text-3xl sm:text-4xl font-black mb-4 text-white">
                   Welcome to Krizz
                 </h1>
                 
-                <p className="text-lg font-medium mb-8 text-white">
+                <p className="text-base sm:text-lg font-medium mb-6 sm:mb-8 text-white">
                   Please read the rules below before starting your chat
                 </p>
 
-                <h2 className="text-2xl font-bold mb-6 text-white">
+                <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-white">
                   Campus Chat Rules
                 </h2>
                 
-                <div className="mb-8 space-y-3 max-w-2xl w-full">
-                  <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-4">
-                    <p className="text-lg font-bold text-red-400">
+                <div className="mb-6 sm:mb-8 space-y-3 max-w-2xl w-full">
+                  <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-3 sm:p-4">
+                    <p className="text-base sm:text-lg font-bold text-red-400">
                       Must be a current student with valid campus access
                     </p>
-                  </div>
+                      </div>
                   
-                  <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4">
-                    <p className="text-lg text-white">
+                  <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-3 sm:p-4">
+                    <p className="text-base sm:text-lg text-white">
                       No inappropriate content or conversations
                     </p>
-                  </div>
+                    </div>
                   
-                  <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4">
-                    <p className="text-lg text-white">
+                  <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-3 sm:p-4">
+                    <p className="text-base sm:text-lg text-white">
                       Be respectful and kind to fellow students
                     </p>
-                  </div>
+                            </div>
                   
-                  <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4">
-                    <p className="text-lg text-white">
+                  <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-3 sm:p-4">
+                    <p className="text-base sm:text-lg text-white">
                       No sharing of personal information
                     </p>
-                  </div>
+                          </div>
                   
-                  <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-4">
-                    <p className="text-lg text-white">
+                  <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-3 sm:p-4">
+                    <p className="text-base sm:text-lg text-white">
                       Breaking any rules results in a permanent ban
                     </p>
-                  </div>
-                </div>
-
+                        </div>
+                      </div>
+                      
                 <button
                   onClick={handleStartConnection}
-                  className="bg-white text-black py-4 px-12 rounded-2xl font-black text-xl hover:bg-gray-100 transition-all duration-300 hover:scale-105"
+                  className="bg-white text-black py-3 px-8 sm:py-4 sm:px-12 rounded-2xl font-black text-lg sm:text-xl hover:bg-gray-100 transition-all duration-300 hover:scale-105"
                 >
                   Start Chat
                 </button>
-              </div>
-            )}
+                    </div>
+                  )}
 
-            {state === STATES.CHATTING && (
+                  {state === STATES.CHATTING && (
               <div className="w-full h-full">
-                {/* Shared Interests Display */}
-                {sharedInterests.length > 0 && (
+                      {/* Shared Interests Display */}
+                      {sharedInterests.length > 0 && (
                   <div className={`mb-8 p-8 rounded-3xl border-2 text-center ${
-                    isDarkMode
-                      ? 'bg-black border-gray-700 shadow-2xl shadow-white/5'
+                          isDarkMode
+                            ? 'bg-black border-gray-700 shadow-2xl shadow-white/5'
                       : 'bg-slate-100/50 border-slate-200/50 shadow-2xl shadow-slate-900/20'
-                  }`}>
+                        }`}>
                     <h3 className={`text-2xl font-bold mb-4 ${
                       isDarkMode ? 'text-white' : 'text-slate-900'
-                    }`}>
-                      🎯 You both are interested in:
-                    </h3>
+                          }`}>
+                            🎯 You both are interested in:
+                          </h3>
                     <div className="flex flex-wrap justify-center gap-3">
-                      {sharedInterests.map((interest, index) => (
-                        <span
-                          key={index}
+                            {sharedInterests.map((interest, index) => (
+                              <span
+                                key={index}
                           className={`px-6 py-3 rounded-2xl text-lg font-semibold ${
-                            isDarkMode
+                                  isDarkMode
                               ? 'bg-white text-slate-900 shadow-lg shadow-white/20'
                               : 'bg-slate-900 text-white shadow-lg shadow-slate-900/20'
-                          }`}
-                        >
-                          {interest}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-                
-                <ChatBox 
-                  messages={messages} 
-                  onSendMessage={handleSendMessage} 
-                  onDisconnect={handleDisconnect}
+                                }`}
+                              >
+                                {interest}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      
+                      <ChatBox 
+                        messages={messages} 
+                        onSendMessage={handleSendMessage} 
+                        onDisconnect={handleDisconnect}
                   onNewChat={handleNewChat}
-                  isDarkMode={isDarkMode}
-                />
+                        isDarkMode={isDarkMode}
+                      />
               </div>
             )}
 
