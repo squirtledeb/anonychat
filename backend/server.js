@@ -101,6 +101,16 @@ app.get('/health', (req, res) => {
   });
 });
 
+// Uptime monitoring endpoint (no IP restriction for monitoring services)
+app.get('/status', (req, res) => {
+  res.json({ 
+    status: 'ok',
+    uptime: process.uptime(),
+    timestamp: Date.now(),
+    service: 'Krizz Chat Server'
+  });
+});
+
 // Stats endpoint for real-time user statistics
 app.get('/api/stats', (req, res) => {
   res.json({

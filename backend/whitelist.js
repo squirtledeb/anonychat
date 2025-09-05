@@ -2,14 +2,26 @@
 // Only this specific IP address is allowed
 
 const WHITELISTED_IPS = [
-  // Only allow this specific IP address
+  // College WiFi IP addresses
   '117.232.140.181',
   '182.79.16.62',
   
   // For testing on localhost (remove in production)
   '127.0.0.1',
   '::1',
-  'localhost'
+  'localhost',
+  
+  // Uptime Robot monitoring IPs (common ranges)
+  '69.162.124.224/28',
+  '63.143.42.240/28', 
+  '46.137.190.132',
+  '122.248.234.23',
+  '178.62.52.237',
+  '46.101.230.157',
+  '178.62.14.40',
+  '104.131.107.63',
+  '159.203.30.41',
+  '198.199.86.11'
 ];
 
 // IP validation function

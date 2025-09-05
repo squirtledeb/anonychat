@@ -49,6 +49,7 @@ function AppContent() {
   const [interestInput, setInterestInput] = useState('');
   const [selectedInterests, setSelectedInterests] = useState([]);
   const [isStrangerTyping, setIsStrangerTyping] = useState(false);
+  const [isAppLoading, setIsAppLoading] = useState(true);
 
   // Generate or retrieve userId from localStorage
   useEffect(() => {
@@ -63,48 +64,43 @@ function AppContent() {
     checkIPAccess();
   }, []);
 
-  // Sync URL with current state
+  // Initialize state from URL on first load only
+  const [isInitialized, setIsInitialized] = useState(false);
+  
   useEffect(() => {
-    const currentPath = location.pathname;
-    
-    // Map URL paths to states
-    if (currentPath === '/' || currentPath === '/home') {
-      if (state !== STATES.IDLE && state !== STATES.RESTRICTED) {
-        setState(STATES.IDLE);
+    if (!isInitialized) {
+      const currentPath = location.pathname;
+      let initialState = STATES.IDLE;
+      
+      // Map URL paths to states on initial load
+      if (currentPath === '/welcome') {
+        initialState = STATES.WELCOME;
+      } else if (currentPath === '/connecting') {
+        initialState = STATES.CONNECTING;
+      } else if (currentPath === '/searching') {
+        initialState = STATES.SEARCHING;
+      } else if (currentPath === '/chat') {
+        initialState = STATES.CHATTING;
+      } else if (currentPath === '/disconnected') {
+        initialState = STATES.DISCONNECTED;
+      } else if (currentPath === '/error') {
+        initialState = STATES.BACKEND_ERROR;
+      } else if (currentPath === '/restricted') {
+        initialState = STATES.RESTRICTED;
+      } else {
+        initialState = STATES.IDLE;
       }
-    } else if (currentPath === '/welcome') {
-      if (state !== STATES.WELCOME) {
-        setState(STATES.WELCOME);
-      }
-    } else if (currentPath === '/connecting') {
-      if (state !== STATES.CONNECTING) {
-        setState(STATES.CONNECTING);
-      }
-    } else if (currentPath === '/searching') {
-      if (state !== STATES.SEARCHING) {
-        setState(STATES.SEARCHING);
-      }
-    } else if (currentPath === '/chat') {
-      if (state !== STATES.CHATTING) {
-        setState(STATES.CHATTING);
-      }
-    } else if (currentPath === '/disconnected') {
-      if (state !== STATES.DISCONNECTED) {
-        setState(STATES.DISCONNECTED);
-      }
-    } else if (currentPath === '/error') {
-      if (state !== STATES.BACKEND_ERROR) {
-        setState(STATES.BACKEND_ERROR);
-      }
-    } else if (currentPath === '/restricted') {
-      if (state !== STATES.RESTRICTED) {
-        setState(STATES.RESTRICTED);
-      }
+      
+      setState(initialState);
+      setIsInitialized(true);
+      setIsAppLoading(false);
     }
-  }, [location.pathname]);
+  }, [location.pathname, isInitialized]);
 
-  // Update URL when state changes
+  // Update URL when state changes (only after initialization)
   useEffect(() => {
+    if (!isInitialized) return;
+    
     const currentPath = location.pathname;
     let targetPath = '/';
     
@@ -140,7 +136,7 @@ function AppContent() {
     if (currentPath !== targetPath) {
       navigate(targetPath, { replace: true });
     }
-  }, [state, navigate, location.pathname]);
+  }, [state, navigate, isInitialized]);
 
   // Load theme preference from localStorage
   useEffect(() => {
@@ -156,11 +152,48 @@ function AppContent() {
     localStorage.setItem('chatTheme', isDarkMode ? 'dark' : 'light');
   }, [isDarkMode]);
 
+  // Cleanup on component unmount or page unload
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
+
+    const handleUnload = () => {
+      if (socketRef.current) {
+        socketRef.current.disconnect();
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('unload', handleUnload);
+
+    // Cleanup function for component unmount
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('unload', handleUnload);
+      if (socketRef.current) {
+        console.log('Component unmounting - cleaning up socket');
+        socketRef.current.disconnect();
+        socketRef.current = null;
+      }
+    };
+  }, []);
+
   // Initialize socket connection
   const initializeSocket = () => {
     if (!userId || isConnecting) return;
 
     setIsConnecting(true);
+    
+    // Clean up any existing socket connection
+    if (socketRef.current) {
+      console.log('Cleaning up existing socket connection');
+      socketRef.current.disconnect();
+      socketRef.current = null;
+      setSocket(null);
+    }
     
     try {
       // Connect to the same domain the app is running on
@@ -187,16 +220,20 @@ function AppContent() {
         setSharedInterests(interests || []); // Store shared interests
         
         // Always add shared interests message to chat if they exist
+        // This will show every time users are paired with shared interests
         if (interests && interests.length > 0) {
           const interestsText = interests.join(', ');
           const sharedInterestsMessage = { 
             text: `You both like: ${interestsText}`, 
             from: 'system', 
             timestamp: Date.now(),
-            isSharedInterests: true // Special flag to identify this message
+            isSharedInterests: true, // Special flag to identify this message
+            id: 'shared-interests-msg' // Unique ID for this message type
           };
           setMessages([sharedInterestsMessage]);
-          console.log('Added shared interests message:', sharedInterestsMessage);
+          console.log('Added shared interests message for reconnection:', sharedInterestsMessage);
+        } else {
+          console.log('No shared interests found for this pairing');
         }
         
         setIsConnecting(false);
@@ -439,6 +476,22 @@ function AppContent() {
     };
   }, []);
 
+  // Show loading screen while initializing
+  if (isAppLoading) {
+    return (
+      <div className={`h-screen w-full flex items-center justify-center transition-all duration-700 ${
+        isDarkMode 
+          ? 'bg-black text-white' 
+          : 'bg-gradient-to-br from-slate-50 via-white to-slate-100 text-gray-900'
+      }`}>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+          <p className="text-lg font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`h-screen w-full transition-all duration-700 ${
       isDarkMode 
@@ -618,62 +671,6 @@ function AppContent() {
                     {isConnecting ? 'Connecting...' : 'Start Chatting'}
                   </button>
 
-                  {/* Development Mode - Test Different States */}
-                  {process.env.NODE_ENV === 'development' && (
-                    <div className="mt-8 p-6 rounded-2xl border border-gray-600">
-                      <h3 className="text-lg font-bold text-gray-300 mb-4 text-center">🧪 Dev Mode - Test States</h3>
-                      <div className="grid grid-cols-2 gap-3">
-                        <button
-                          onClick={() => navigate('/welcome')}
-                          className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm hover:bg-blue-700 transition-colors"
-                        >
-                          Test Welcome
-                        </button>
-                        <button
-                          onClick={() => navigate('/connecting')}
-                          className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm hover:bg-blue-700 transition-colors"
-                        >
-                          Test Connecting
-                        </button>
-                        <button
-                          onClick={() => navigate('/searching')}
-                          className="px-4 py-2 rounded-xl bg-yellow-600 text-white text-sm hover:bg-yellow-700 transition-colors"
-                        >
-                          Test Searching
-                        </button>
-                        <button
-                          onClick={() => navigate('/chat')}
-                          className="px-4 py-2 rounded-xl bg-green-600 text-white text-sm hover:bg-green-700 transition-colors"
-                        >
-                          Test Chatting
-                        </button>
-                        <button
-                          onClick={() => navigate('/disconnected')}
-                          className="px-4 py-2 rounded-xl bg-red-600 text-white text-sm hover:bg-red-700 transition-colors"
-                        >
-                          Test Disconnected
-                        </button>
-                        <button
-                          onClick={() => navigate('/error')}
-                          className="px-4 py-2 rounded-xl bg-red-800 text-white text-sm hover:bg-red-900 transition-colors"
-                        >
-                          Test Backend Error
-                        </button>
-                        <button
-                          onClick={() => navigate('/')}
-                          className="px-4 py-2 rounded-xl bg-gray-600 text-white text-sm hover:bg-gray-700 transition-colors"
-                        >
-                          Back to Idle
-                        </button>
-                        <button
-                          onClick={() => navigate('/welcome')}
-                          className="px-4 py-2 rounded-xl bg-purple-600 text-white text-sm hover:bg-purple-700 transition-colors"
-                        >
-                          Back to Welcome
-                        </button>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
             )}

@@ -5,9 +5,7 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
   const [buttonState, setButtonState] = useState('stop'); // 'stop', 'really', 'new'
   const [clickCount, setClickCount] = useState(0);
   const [lastClickTime, setLastClickTime] = useState(0);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [showGifPicker, setShowGifPicker] = useState(false);
-  const [selectedEmojiCategory, setSelectedEmojiCategory] = useState('smileys');
   const [gifSearchQuery, setGifSearchQuery] = useState('');
   const [gifs, setGifs] = useState([]);
   const [isLoadingGifs, setIsLoadingGifs] = useState(false);
@@ -54,9 +52,6 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
           setShowGifPicker(false);
           setGifSearchQuery('');
         }
-        if (showEmojiPicker) {
-          setShowEmojiPicker(false);
-        }
       }
       
       // Enter key in GIF search - perform search
@@ -67,18 +62,13 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
     };
 
     const handleClickOutside = (e) => {
-      // Close pickers if clicking outside
-      if (showGifPicker || showEmojiPicker) {
+      // Close gif picker if clicking outside
+      if (showGifPicker) {
         const gifPicker = document.querySelector('[data-gif-picker]');
-        const emojiPicker = document.querySelector('[data-emoji-picker]');
         
         if (gifPicker && !gifPicker.contains(e.target) && !e.target.closest('[data-gif-button]')) {
           setShowGifPicker(false);
           setGifSearchQuery('');
-        }
-        
-        if (emojiPicker && !emojiPicker.contains(e.target) && !e.target.closest('[data-emoji-button]')) {
-          setShowEmojiPicker(false);
         }
       }
     };
@@ -90,7 +80,7 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [showGifPicker, showEmojiPicker, gifSearchQuery]);
+  }, [showGifPicker, gifSearchQuery]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -369,25 +359,12 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
     }
   };
 
-  const handleEmojiClick = () => {
-    setShowEmojiPicker(!showEmojiPicker);
-    setShowGifPicker(false);
-  };
 
-  const handleEmojiSelect = (emoji) => {
-    console.log('Emoji selected:', emoji);
-    if (onSendMessage) {
-      onSendMessage(emoji);
-    } else {
-      console.error('onSendMessage function not available');
-    }
-    setShowEmojiPicker(false);
-  };
 
   const handleGifSelect = (gifUrl) => {
     console.log('GIF selected:', gifUrl);
     if (onSendMessage) {
-      onSendMessage(`[GIF: ${gifUrl}]`);
+    onSendMessage(`[GIF: ${gifUrl}]`);
     } else {
       console.error('onSendMessage function not available');
     }
@@ -535,13 +512,10 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
                   </div>
                 ) : message.from === 'system' && (message.text.includes('You both like:') || message.isSharedInterests) ? (
                   <div className="text-center">
-                    <div className="flex items-center justify-center mb-2">
-                      <span className="text-lg">🤝</span>
-                    </div>
                     <p className="text-sm font-medium">{message.text}</p>
                   </div>
                 ) : (
-                  <p className="text-sm sm:text-sm break-words">{message.text}</p>
+                <p className="text-sm sm:text-sm break-words">{message.text}</p>
                 )}
               </div>
             </div>
@@ -552,11 +526,8 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
         {isStrangerTyping && (
           <div className="flex justify-start">
             <div className="max-w-[85%] sm:max-w-xs lg:max-w-md px-3 py-2 sm:px-4 sm:py-2 rounded-lg bg-gray-600/50 text-white">
-              <div className="text-xs sm:text-sm font-medium mb-1 text-gray-300">
-                Stranger
-              </div>
-              <div className="flex items-center space-x-1">
-                <span className="text-sm">is typing</span>
+              <div className="flex items-center space-x-2">
+                <span className="text-sm text-gray-300">Stranger is typing</span>
                 <div className="flex space-x-1">
                   <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0ms'}}></div>
                   <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '150ms'}}></div>
@@ -602,15 +573,6 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
             GIF
           </button>
           
-          {/* Emoji button - hidden on mobile */}
-          <button
-            type="button"
-            onClick={handleEmojiClick}
-            data-emoji-button
-            className="hidden sm:block px-2 py-2 sm:px-3 sm:py-3 rounded-lg bg-gray-800 text-white text-xs sm:text-sm hover:bg-gray-700 transition-colors flex-shrink-0 min-w-[40px] sm:min-w-[50px]"
-          >
-            😊
-          </button>
           
           {/* Enter button - visible on both mobile and desktop */}
           <button
@@ -626,171 +588,10 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
         </form>
       </div>
 
-      {/* Emoji Picker - Clean Design Like Image */}
-      {showEmojiPicker && (
-        <div data-emoji-picker className="absolute bottom-20 right-4 bg-gray-900 border border-gray-600 rounded-xl shadow-2xl z-50 w-80 h-96">
-          {/* Search Bar */}
-          <div className="p-3 border-b border-gray-700">
-            <div className="relative">
-              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 text-sm">🔍</span>
-              <input
-                type="text"
-                placeholder="Search"
-                className="w-full bg-gray-800 text-white rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-
-          {/* Category Tabs - Clean Icons */}
-          <div className="flex justify-between border-b border-gray-700 px-2 py-2">
-            {[
-              { id: 'recent', icon: '🕒', name: 'Recent' },
-              { id: 'smileys', icon: '😀', name: 'Smileys' },
-              { id: 'people', icon: '👋', name: 'People' },
-              { id: 'animals', icon: '🐶', name: 'Animals' },
-              { id: 'food', icon: '🍎', name: 'Food' },
-              { id: 'activities', icon: '⚽', name: 'Activities' },
-              { id: 'travel', icon: '🚗', name: 'Travel' },
-              { id: 'objects', icon: '⌚', name: 'Objects' },
-              { id: 'symbols', icon: '❤️', name: 'Symbols' },
-              { id: 'flags', icon: '🏁', name: 'Flags' }
-            ].map((category) => (
-              <button
-                key={category.id}
-                onClick={() => setSelectedEmojiCategory(category.id)}
-                className={`p-2 rounded-lg text-lg hover:bg-gray-700 transition-colors ${
-                  selectedEmojiCategory === category.id ? 'bg-blue-600' : 'bg-transparent'
-                }`}
-                title={category.name}
-              >
-                {category.icon}
-              </button>
-            ))}
-          </div>
-
-          {/* Emoji Grid - Cleaner Layout */}
-          <div className="h-72 overflow-y-auto p-3">
-            <div className="grid grid-cols-8 gap-1">
-              {(() => {
-                const emojiCategories = {
-                  recent: [
-                    '😀', '😂', '❤️', '👍', '🙌', '🎉', '😊', '👏', 
-                    '🔥', '💯', '😍', '🤔', '😎', '👌', '✨', '💪',
-                    '🤣', '😘', '🥰', '😭', '🤗', '😉', '🙂', '😃'
-                  ],
-                  smileys: [
-                    '😀', '😃', '😄', '😁', '😆', '😅', '🤣', '😂',
-                    '🙂', '🙃', '😉', '😊', '😇', '🥰', '😍', '🤩',
-                    '😘', '😗', '☺️', '😚', '😙', '🥲', '😋', '😛',
-                    '😜', '🤪', '😝', '🤑', '🤗', '🤭', '🤫', '🤔',
-                    '🤐', '🤨', '😐', '😑', '😶', '😏', '😒', '🙄',
-                    '😬', '🤥', '😔', '😪', '🤤', '😴', '😷', '🤒',
-                    '🤕', '🤢', '🤮', '🤧', '🥵', '🥶', '🥴', '😵',
-                    '🤯', '🤠', '🥳', '😎', '🤓', '🧐', '😕', '😟',
-                    '🙁', '☹️', '😮', '😯', '😲', '😳', '🥺', '😦',
-                    '😧', '😨', '😰', '😥', '😢', '😭', '😱', '😖'
-                  ],
-                  people: [
-                    '👋', '🤚', '🖐️', '✋', '🖖', '👌', '🤏', '✌️',
-                    '🤞', '🤟', '🤘', '🤙', '👈', '👉', '👆', '🖕',
-                    '👇', '☝️', '👍', '👎', '👊', '✊', '🤛', '🤜',
-                    '👏', '🙌', '👐', '🤲', '🤝', '🙏', '✍️', '💅',
-                    '🤳', '💪', '🦾', '🦿', '🦵', '🦶', '👂', '🦻',
-                    '👃', '🧠', '🦷', '🦴', '👀', '👁️', '👅', '👄',
-                    '👶', '🧒', '👦', '👧', '🧑', '👱', '👨', '🧔',
-                    '👩', '🧓', '👴', '👵', '🙍', '🙎', '🙅', '🙆',
-                    '💁', '🙋', '🧏', '🙇', '🤦', '🤷', '👨‍⚕️', '👩‍⚕️'
-                  ],
-                  animals: [
-                    '🐶', '🐱', '🐭', '🐹', '🐰', '🦊', '🐻', '🐼',
-                    '🐨', '🐯', '🦁', '🐮', '🐷', '🐽', '🐸', '🐵',
-                    '🙈', '🙉', '🙊', '🐒', '🐔', '🐧', '🐦', '🐤',
-                    '🐣', '🐥', '🦆', '🦅', '🦉', '🦇', '🐺', '🐗',
-                    '🐴', '🦄', '🐝', '🐛', '🦋', '🐌', '🐞', '🐜',
-                    '🦟', '🦗', '🕷️', '🕸️', '🦂', '🐢', '🐍', '🦎',
-                    '🦖', '🦕', '🐙', '🦑', '🦐', '🦞', '🦀', '🐡',
-                    '🐠', '🐟', '🐬', '🐳', '🐋', '🦈', '🐊', '🐅'
-                  ],
-                  food: [
-                    '🍎', '🍐', '🍊', '🍋', '🍌', '🍉', '🍇', '🍓',
-                    '🫐', '🍈', '🍒', '🍑', '🥭', '🍍', '🥥', '🥝',
-                    '🍅', '🍆', '🥑', '🥦', '🥬', '🥒', '🌶️', '🫑',
-                    '🌽', '🥕', '🫒', '🧄', '🧅', '🥔', '🍠', '🥐',
-                    '🥯', '🍞', '🥖', '🥨', '🧀', '🥚', '🍳', '🧈',
-                    '🥞', '🧇', '🥓', '🥩', '🍗', '🍖', '🦴', '🌭',
-                    '🍔', '🍟', '🍕', '🥪', '🥙', '🧆', '🌮', '🌯',
-                    '🫔', '🥗', '🥘', '🫕', '🍝', '🍜', '🍲', '🍛'
-                  ],
-                  activities: [
-                    '⚽', '🏀', '🏈', '⚾', '🥎', '🎾', '🏐', '🏉',
-                    '🥏', '🎱', '🪀', '🏓', '🏸', '🏒', '🏑', '🥍',
-                    '🏏', '🪃', '🥅', '⛳', '🪁', '🏹', '🎣', '🤿',
-                    '🥊', '🥋', '🎽', '🛹', '🛷', '⛸️', '🥌', '🎿',
-                    '⛷️', '🏂', '🪂', '🏋️', '🤼', '🤸', '⛹️', '🤺',
-                    '🏇', '🧘', '🏄', '🏊', '🤽', '🚣', '🧗', '🚵',
-                    '🚴', '🏆', '🥇', '🥈', '🥉', '🏅', '🎖️', '🏵️',
-                    '🎗️', '🎫', '🎟️', '🎪', '🤹', '🎭', '🩰', '🎨'
-                  ],
-                  travel: [
-                    '🚗', '🚕', '🚙', '🚌', '🚎', '🏎️', '🚓', '🚑',
-                    '🚒', '🚐', '🛻', '🚚', '🚛', '🚜', '🏍️', '🛵',
-                    '🚲', '🛴', '🛹', '🛼', '🚁', '🛸', '✈️', '🛩️',
-                    '🪂', '💺', '🚀', '🛰️', '🚢', '⛵', '🚤', '🛥️',
-                    '🛳️', '⛴️', '🚂', '🚃', '🚄', '🚅', '🚆', '🚇',
-                    '🚈', '🚉', '🚊', '🚝', '🚞', '🚋', '🚌', '🚍',
-                    '🏠', '🏡', '🏢', '🏣', '🏤', '🏥', '🏦', '🏨',
-                    '🏩', '🏪', '🏫', '🏬', '🏭', '🏯', '🏰', '💒'
-                  ],
-                  objects: [
-                    '⌚', '📱', '📲', '💻', '⌨️', '🖥️', '🖨️', '🖱️',
-                    '🖲️', '🕹️', '🗜️', '💽', '💾', '💿', '📀', '📼',
-                    '📷', '📸', '📹', '🎥', '📽️', '🎞️', '📞', '☎️',
-                    '📟', '📠', '📺', '📻', '🎙️', '🎚️', '🎛️', '🧭',
-                    '⏱️', '⏲️', '⏰', '🕰️', '⌛', '⏳', '📡', '🔋',
-                    '🔌', '💡', '🔦', '🕯️', '🪔', '🧯', '🛢️', '💸',
-                    '💵', '💴', '💶', '💷', '🪙', '💰', '💳', '💎',
-                    '⚖️', '🪜', '🧰', '🔧', '🔨', '⚒️', '🛠️', '⛏️'
-                  ],
-                  symbols: [
-                    '❤️', '🧡', '💛', '💚', '💙', '💜', '🖤', '🤍',
-                    '🤎', '💔', '❣️', '💕', '💞', '💓', '💗', '💖',
-                    '💘', '💝', '💟', '☮️', '✝️', '☪️', '🕉️', '☸️',
-                    '✡️', '🔯', '🕎', '☯️', '☦️', '🛐', '⛎', '♈',
-                    '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐',
-                    '♑', '♒', '♓', '🆔', '⚛️', '🉑', '☢️', '☣️',
-                    '📴', '📳', '🈶', '🈚', '🈸', '🈺', '🈷️', '✴️',
-                    '🆚', '💮', '🉐', '㊙️', '㊗️', '🈴', '🈵', '🈹'
-                  ],
-                  flags: [
-                    '🏁', '🚩', '🎌', '🏴', '🏳️', '🏳️‍🌈', '🏳️‍⚧️', '🏴‍☠️',
-                    '🇺🇸', '🇬🇧', '🇨🇦', '🇦🇺', '🇩🇪', '🇫🇷', '🇮🇹', '🇪🇸',
-                    '🇷🇺', '🇨🇳', '🇯🇵', '🇰🇷', '🇮🇳', '🇧🇷', '🇲🇽', '🇳🇱',
-                    '🇸🇪', '🇳🇴', '🇩🇰', '🇫🇮', '🇵🇱', '🇨🇭', '🇦🇹', '🇧🇪',
-                    '🇨🇿', '🇸🇰', '🇭🇺', '🇷🇴', '🇧🇬', '🇭🇷', '🇸🇮', '🇷🇸',
-                    '🇺🇦', '🇧🇾', '🇱🇹', '🇱🇻', '🇪🇪', '🇲🇩', '🇦🇱', '🇲🇰',
-                    '🇲🇪', '🇧🇦', '🇽🇰', '🇬🇷', '🇨🇾', '🇹🇷', '🇦🇲', '🇬🇪'
-                  ]
-                };
-                
-                return emojiCategories[selectedEmojiCategory] || [];
-              })().map((emoji, index) => (
-                <button
-                  key={index}
-                  onClick={() => handleEmojiSelect(emoji)}
-                  className="p-2 hover:bg-gray-700 rounded-lg text-lg transition-colors"
-                  data-emoji-button
-                >
-                  {emoji}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* GIF Picker */}
       {showGifPicker && (
-        <div data-gif-picker className="absolute bottom-20 right-4 bg-gray-800 border border-gray-700 rounded-lg p-3 shadow-2xl z-50 w-72 max-h-72 overflow-hidden">
+        <div data-gif-picker className="absolute bottom-20 right-4 bg-gray-800 border border-gray-700 rounded-lg p-4 shadow-2xl z-50 w-96 max-h-96 overflow-hidden">
           <h3 className="text-white font-bold mb-2 text-sm">Search GIFs</h3>
           
           {/* Search Bar */}
@@ -813,17 +614,17 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
           </div>
 
           {/* GIF Grid */}
-          <div className="max-h-40 overflow-y-auto">
+          <div className="max-h-64 overflow-y-auto">
             {isLoadingGifs ? (
               <div className="flex items-center justify-center py-4">
                 <div className="animate-spin rounded-full h-4 w-4 border-2 border-transparent border-t-white border-r-white/50"></div>
               </div>
             ) : (
-              <div className="grid grid-cols-2 gap-1">
+              <div className="grid grid-cols-3 gap-2">
                 {gifs.map((gif) => (
-                  <button
+              <button
                     key={gif.id}
-                    onClick={() => handleGifSelect(gif.url)}
+                onClick={() => handleGifSelect(gif.url)}
                     className="bg-gray-700 hover:bg-gray-600 rounded p-1 transition-colors group"
                   >
                     <div className="aspect-square bg-gray-600 rounded mb-1 overflow-hidden">
@@ -841,8 +642,8 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
                       </div>
                     </div>
                     <p className="text-white text-xs truncate">{gif.title}</p>
-                  </button>
-                ))}
+              </button>
+            ))}
               </div>
             )}
           </div>
