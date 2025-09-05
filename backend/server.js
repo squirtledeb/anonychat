@@ -152,11 +152,16 @@ io.on('connection', (socket) => {
         const waitingInterests = userInterests[waitingUserId] || [];
         
         // Calculate interest match score (case-insensitive)
-        const sharedInterests = interests.filter(interest => 
-          waitingInterests.some(waitingInterest => 
+        const sharedInterests = [];
+        interests.forEach(interest => {
+          const matchingInterest = waitingInterests.find(waitingInterest => 
             waitingInterest.toLowerCase() === interest.toLowerCase()
-          )
-        );
+          );
+          if (matchingInterest) {
+            // Use the first user's casing (from waiting queue)
+            sharedInterests.push(matchingInterest);
+          }
+        });
         const matchScore = sharedInterests.length;
         
         if (matchScore > bestMatchScore) {
@@ -172,12 +177,17 @@ io.on('connection', (socket) => {
         const partnerInterests = userInterests[partnerId] || [];
         
         if (partnerSocket) {
-          // Calculate shared interests (case-insensitive)
-          const sharedInterests = interests.filter(interest => 
-            partnerInterests.some(partnerInterest => 
+          // Calculate shared interests (case-insensitive) - preserve original casing
+          const sharedInterests = [];
+          interests.forEach(interest => {
+            const matchingInterest = partnerInterests.find(partnerInterest => 
               partnerInterest.toLowerCase() === interest.toLowerCase()
-            )
-          );
+            );
+            if (matchingInterest) {
+              // Use the partner's casing (first person who added it)
+              sharedInterests.push(matchingInterest);
+            }
+          });
           
           // Create the pairing
           activePairs[userId] = partnerId;

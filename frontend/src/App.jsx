@@ -510,22 +510,22 @@ function AppContent() {
               ? 'bg-black/95 border-gray-800' 
               : 'bg-white/80 border-slate-200/50 shadow-2xl shadow-slate-900/10'
           }`}>
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-              <div className="flex items-center justify-between h-16 sm:h-20">
+            <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
+              <div className="flex items-center justify-between h-14 sm:h-16 md:h-18 lg:h-20">
                 {/* Logo */}
                 <button 
                   onClick={() => navigate('/')}
-                  className="flex items-center space-x-2 sm:space-x-4 hover:opacity-80 transition-opacity duration-300"
+                  className="flex items-center space-x-2 sm:space-x-3 md:space-x-4 hover:opacity-80 transition-opacity duration-300"
                 >
-                  <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-3xl flex items-center justify-center transition-all duration-500 ${
+                  <div className={`w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-2xl sm:rounded-3xl flex items-center justify-center transition-all duration-500 ${
                     isDarkMode 
                       ? 'bg-white shadow-2xl shadow-white/20 hover:shadow-white/40' 
                       : 'bg-slate-900 shadow-2xl shadow-slate-900/20 hover:shadow-slate-900/40'
                   } hover:scale-110`}>
-                    <span className={`text-xl sm:text-2xl ${isDarkMode ? 'text-slate-900' : 'text-white'}`}>💬</span>
+                    <span className={`text-lg sm:text-xl md:text-2xl ${isDarkMode ? 'text-slate-900' : 'text-white'}`}>💬</span>
                   </div>
-                  <div>
-                    <h1 className={`text-lg sm:text-2xl font-black tracking-tight ${
+                  <div className="hidden xs:block">
+                    <h1 className={`text-base sm:text-lg md:text-xl lg:text-2xl font-black tracking-tight ${
                       isDarkMode ? 'text-white' : 'text-slate-900'
                     }`}>
                       Krizz
@@ -539,28 +539,28 @@ function AppContent() {
                 </button>
 
                 {/* Theme Toggle */}
-                <div className="flex items-center space-x-2 sm:space-x-4">
+                <div className="flex items-center space-x-2 sm:space-x-3 md:space-x-4">
                   <div className="flex items-center space-x-2 sm:space-x-3">
-                    <span className={`text-sm sm:text-lg transition-all duration-300 ${
+                    <span className={`text-sm sm:text-base md:text-lg transition-all duration-300 ${
                       isDarkMode ? 'text-slate-400' : 'text-slate-600'
                     }`}>
                       ☀️
                     </span>
                     <button
                       onClick={() => setIsDarkMode(!isDarkMode)}
-                      className={`relative inline-flex h-6 w-12 sm:h-7 sm:w-14 items-center rounded-full transition-all duration-500 focus:outline-none focus:ring-4 ${
+                      className={`relative inline-flex h-5 w-10 sm:h-6 sm:w-12 md:h-7 md:w-14 items-center rounded-full transition-all duration-500 focus:outline-none focus:ring-4 ${
                         isDarkMode 
                           ? 'bg-white focus:ring-white/30 shadow-2xl shadow-white/20' 
                           : 'bg-slate-200 focus:ring-slate-400/30 shadow-2xl shadow-slate-900/10'
                       } ${isDarkMode ? 'focus:ring-offset-slate-900' : 'focus:ring-offset-white'}`}
                     >
                       <span
-                        className={`inline-block h-4 w-4 sm:h-5 sm:w-5 transform rounded-full transition-all duration-500 ${
-                          isDarkMode ? 'translate-x-6 sm:translate-x-8 bg-slate-900' : 'translate-x-1 bg-white'
+                        className={`inline-block h-3 w-3 sm:h-4 sm:w-4 md:h-5 md:w-5 transform rounded-full transition-all duration-500 ${
+                          isDarkMode ? 'translate-x-5 sm:translate-x-6 md:translate-x-8 bg-slate-900' : 'translate-x-1 bg-white'
                         }`}
                       />
                     </button>
-                    <span className={`text-sm sm:text-lg transition-all duration-300 ${
+                    <span className={`text-sm sm:text-base md:text-lg transition-all duration-300 ${
                       isDarkMode ? 'text-slate-400' : 'text-slate-600'
                     }`}>
                       🌙
@@ -574,13 +574,13 @@ function AppContent() {
           {/* Main Content */}
           <main className={`flex-1 flex items-center justify-center w-full ${
             state === STATES.CHATTING ? 'h-full px-0' : 
-            state === STATES.WELCOME ? 'h-full px-0' : 'h-[calc(100vh-4rem)] sm:h-[calc(100vh-5rem)] px-4 sm:px-6'
+            state === STATES.WELCOME ? 'h-full px-0' : 'h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)] md:h-[calc(100vh-4.5rem)] lg:h-[calc(100vh-5rem)] px-3 sm:px-4 md:px-6 lg:px-8'
           }`}>
             {state === STATES.IDLE && (
-              <div className="w-full max-w-4xl mx-auto text-center">
+              <div className="w-full max-w-5xl mx-auto text-center">
                 {/* Main Title Section */}
-                <div className="mb-16 animate-fade-in-down">
-                  <p className={`text-2xl sm:text-3xl font-medium max-w-3xl mx-auto leading-relaxed ${
+                <div className="mb-8 sm:mb-12 md:mb-16 animate-fade-in-down">
+                  <p className={`text-lg sm:text-xl md:text-2xl lg:text-3xl font-medium max-w-4xl mx-auto leading-relaxed px-4 ${
                     isDarkMode ? 'text-slate-300' : 'text-slate-600'
                   }`}>
                     Connect with fellow students through shared interests and meaningful conversations
@@ -588,21 +588,21 @@ function AppContent() {
                 </div>
 
                 {/* Interest Setup Card */}
-                <div className={`w-full max-w-3xl mx-auto p-12 rounded-4xl transition-all duration-700 ${
+                <div className={`w-full max-w-4xl mx-auto p-6 sm:p-8 md:p-10 lg:p-12 rounded-3xl md:rounded-4xl transition-all duration-700 ${
                   isDarkMode
                     ? 'bg-black border border-gray-700 shadow-2xl shadow-white/5'
                     : 'bg-white/80 border border-slate-200/50 shadow-2xl shadow-slate-900/20 backdrop-blur-2xl'
                 }`}>
-                  <h2 className={`text-4xl font-black text-center mb-10 tracking-tight ${
+                  <h2 className={`text-2xl sm:text-3xl md:text-4xl font-black text-center mb-6 sm:mb-8 md:mb-10 tracking-tight ${
                     isDarkMode ? 'text-white' : 'text-slate-900'
                   }`}>
                     What interests you?
                   </h2>
                   
                   {/* Interest Input */}
-                  <div className="flex space-x-4 mb-8">
+                  <div className="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 mb-6 sm:mb-8">
                     <div className="flex-1 relative">
-                      <div className={`px-8 py-5 rounded-2xl border-2 transition-all duration-300 focus-within:ring-4 ${
+                      <div className={`px-4 sm:px-6 md:px-8 py-4 sm:py-5 rounded-xl sm:rounded-2xl border-2 transition-all duration-300 focus-within:ring-4 ${
                         isDarkMode
                           ? 'bg-black border-gray-700 text-white focus-within:border-white focus-within:ring-white/20 shadow-lg'
                           : 'bg-white border-slate-200 text-slate-900 focus-within:border-slate-900/50 focus-within:ring-slate-900/20 shadow-lg'
@@ -613,7 +613,7 @@ function AppContent() {
                             {selectedInterests.map((interest, index) => (
                               <div
                                 key={index}
-                                className={`px-3 py-1 rounded-full flex items-center space-x-2 text-sm ${
+                                className={`px-2 sm:px-3 py-1 rounded-full flex items-center space-x-1 sm:space-x-2 text-xs sm:text-sm ${
                                   isDarkMode 
                                     ? 'bg-white text-black' 
                                     : 'bg-slate-900 text-white'
@@ -622,7 +622,7 @@ function AppContent() {
                                 <span>{interest}</span>
                                 <button
                                   onClick={() => removeInterest(index)}
-                                  className="w-4 h-4 rounded-full hover:bg-black/10 transition-colors flex items-center justify-center text-xs"
+                                  className="w-3 h-3 sm:w-4 sm:h-4 rounded-full hover:bg-black/10 transition-colors flex items-center justify-center text-xs"
                                 >
                                   ×
                                 </button>
@@ -638,7 +638,7 @@ function AppContent() {
                       value={interestInput}
                       onChange={(e) => setInterestInput(e.target.value)}
                       onKeyPress={(e) => e.key === 'Enter' && addInterest()}
-                          className={`w-full bg-transparent border-none outline-none text-lg placeholder-gray-400 ${
+                          className={`w-full bg-transparent border-none outline-none text-base sm:text-lg placeholder-gray-400 ${
                             isDarkMode ? 'text-white' : 'text-slate-900'
                       }`}
                     />
@@ -647,7 +647,7 @@ function AppContent() {
                     <button
                       onClick={addInterest}
                       disabled={!interestInput.trim()}
-                      className={`px-10 py-5 rounded-2xl font-bold text-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ${
+                      className={`px-6 sm:px-8 md:px-10 py-4 sm:py-5 rounded-xl sm:rounded-2xl font-bold text-base sm:text-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 ${
                         isDarkMode
                           ? 'bg-white text-slate-900 hover:bg-slate-100 shadow-2xl shadow-white/20 hover:shadow-white/40 hover:scale-105'
                           : 'bg-slate-900 text-white hover:bg-slate-800 shadow-2xl shadow-slate-900/20 hover:shadow-slate-900/40 hover:scale-105'
@@ -661,7 +661,7 @@ function AppContent() {
                   <button
                     onClick={handleStartChat}
                     disabled={isConnecting}
-                    className={`w-full py-6 px-8 rounded-3xl font-black text-2xl transition-all duration-500 ${
+                    className={`w-full py-4 sm:py-5 md:py-6 px-6 sm:px-8 rounded-2xl sm:rounded-3xl font-black text-lg sm:text-xl md:text-2xl transition-all duration-500 ${
                       isConnecting
                         ? 'bg-slate-400 cursor-not-allowed'
                         : isDarkMode
@@ -677,46 +677,46 @@ function AppContent() {
             )}
 
             {state === STATES.WELCOME && (
-              <div className="fixed inset-0 bg-black flex flex-col items-center justify-center text-center z-10 px-4 sm:px-6">
-                <h1 className="text-3xl sm:text-4xl font-black mb-4 text-white">
+              <div className="fixed inset-0 bg-black flex flex-col items-center justify-center text-center z-10 px-4 sm:px-6 md:px-8">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-black mb-3 sm:mb-4 text-white">
                   Welcome to Krizz
                 </h1>
                 
-                <p className="text-base sm:text-lg font-medium mb-6 sm:mb-8 text-white">
+                <p className="text-sm sm:text-base md:text-lg font-medium mb-4 sm:mb-6 md:mb-8 text-white max-w-lg">
                   Please read the rules below before starting your chat
                 </p>
 
-                <h2 className="text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-white">
+                <h2 className="text-lg sm:text-xl md:text-2xl font-bold mb-3 sm:mb-4 md:mb-6 text-white">
                   Campus Chat Rules
                 </h2>
                 
-                <div className="mb-6 sm:mb-8 space-y-3 max-w-2xl w-full">
-                  <div className="bg-red-500/20 border border-red-500/30 rounded-xl p-3 sm:p-4">
-                    <p className="text-base sm:text-lg font-bold text-red-400">
+                <div className="mb-4 sm:mb-6 md:mb-8 space-y-2 sm:space-y-3 max-w-3xl w-full">
+                  <div className="bg-red-500/20 border border-red-500/30 rounded-lg sm:rounded-xl p-3 sm:p-4">
+                    <p className="text-sm sm:text-base md:text-lg font-bold text-red-400">
                       Must be a current student with valid campus access
                     </p>
                       </div>
                   
-                  <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-3 sm:p-4">
-                    <p className="text-base sm:text-lg text-white">
+                  <div className="bg-gray-800/50 border border-gray-700 rounded-lg sm:rounded-xl p-3 sm:p-4">
+                    <p className="text-sm sm:text-base md:text-lg text-white">
                       No inappropriate content or conversations
                     </p>
                     </div>
                   
-                  <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-3 sm:p-4">
-                    <p className="text-base sm:text-lg text-white">
+                  <div className="bg-gray-800/50 border border-gray-700 rounded-lg sm:rounded-xl p-3 sm:p-4">
+                    <p className="text-sm sm:text-base md:text-lg text-white">
                       Be respectful and kind to fellow students
                     </p>
                             </div>
                   
-                  <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-3 sm:p-4">
-                    <p className="text-base sm:text-lg text-white">
+                  <div className="bg-gray-800/50 border border-gray-700 rounded-lg sm:rounded-xl p-3 sm:p-4">
+                    <p className="text-sm sm:text-base md:text-lg text-white">
                       No sharing of personal information
                     </p>
                           </div>
                   
-                  <div className="bg-gray-800/50 border border-gray-700 rounded-xl p-3 sm:p-4">
-                    <p className="text-base sm:text-lg text-white">
+                  <div className="bg-gray-800/50 border border-gray-700 rounded-lg sm:rounded-xl p-3 sm:p-4">
+                    <p className="text-sm sm:text-base md:text-lg text-white">
                       Breaking any rules results in a permanent ban
                     </p>
                         </div>
@@ -724,7 +724,7 @@ function AppContent() {
                       
                 <button
                   onClick={handleStartConnection}
-                  className="bg-white text-black py-3 px-8 sm:py-4 sm:px-12 rounded-2xl font-black text-lg sm:text-xl hover:bg-gray-100 transition-all duration-300 hover:scale-105"
+                  className="bg-white text-black py-3 px-6 sm:py-4 sm:px-8 md:px-12 rounded-xl sm:rounded-2xl font-black text-base sm:text-lg md:text-xl hover:bg-gray-100 transition-all duration-300 hover:scale-105"
                 >
                   Start Chat
                 </button>
@@ -747,61 +747,61 @@ function AppContent() {
               </div>
             )}
 
-            {state !== STATES.IDLE && state !== STATES.CHATTING && (
-              <div className="w-full max-w-5xl mx-auto">
-                <div className={`rounded-4xl shadow-2xl p-8 sm:p-12 transition-all duration-700 ${
+            {state !== STATES.IDLE && state !== STATES.CHATTING && state !== STATES.WELCOME && (
+              <div className="w-full max-w-6xl mx-auto">
+                <div className={`rounded-3xl md:rounded-4xl shadow-2xl p-6 sm:p-8 md:p-10 lg:p-12 transition-all duration-700 ${
                   isDarkMode 
                     ? 'bg-black border border-gray-700 shadow-white/5' 
                     : 'bg-white/80 border border-slate-200/50 shadow-slate-900/20'
                 } backdrop-blur-2xl`}>
                   {state === STATES.CONNECTING && (
-                    <div className="text-center py-20">
-                      <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full mb-8 ${
+                    <div className="text-center py-12 sm:py-16 md:py-20">
+                      <div className={`inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full mb-6 sm:mb-8 ${
                         isDarkMode 
                           ? 'bg-white/10 border-2 border-white/20' 
                           : 'bg-slate-900/10 border-2 border-slate-900/20'
                       }`}>
-                        <div className="animate-spin rounded-full h-12 w-12 border-4 border-transparent border-t-white border-r-white/50"></div>
+                        <div className="animate-spin rounded-full h-10 w-10 sm:h-12 sm:w-12 border-4 border-transparent border-t-white border-r-white/50"></div>
                       </div>
-                      <div className={`text-3xl font-bold mb-6 ${
+                      <div className={`text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 ${
                         isDarkMode ? 'text-white' : 'text-slate-900'
                       }`}>Connecting to server...</div>
-                      <p className={`text-lg ${
+                      <p className={`text-base sm:text-lg ${
                         isDarkMode ? 'text-slate-400' : 'text-slate-600'
                       }`}>Please wait while we establish your connection</p>
                     </div>
                   )}
                   {state === STATES.SEARCHING && (
-                    <div className="text-center py-20">
-                      <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full mb-8 ${
+                    <div className="text-center py-12 sm:py-16 md:py-20">
+                      <div className={`inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 rounded-full mb-6 sm:mb-8 ${
                         isDarkMode 
                           ? 'bg-white/10 border-2 border-white/20' 
                           : 'bg-slate-900/10 border-2 border-slate-900/20'
                       }`}>
-                        <span className="text-4xl">🔍</span>
+                        <span className="text-3xl sm:text-4xl">🔍</span>
                       </div>
-                      <div className={`text-3xl font-bold mb-6 ${
+                      <div className={`text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 ${
                         isDarkMode ? 'text-white' : 'text-slate-900'
                       }`}>Looking for someone to chat with...</div>
                       
                       {/* Online Count */}
-                      <div className={`mb-12 p-8 rounded-3xl ${
+                      <div className={`mb-8 sm:mb-12 p-6 sm:p-8 rounded-2xl sm:rounded-3xl ${
                         isDarkMode ? 'bg-black border border-gray-700' : 'bg-slate-100/50 border border-slate-200/50'
                       } backdrop-blur-sm`}>
                         <div className="text-center">
-                          <div className={`text-4xl font-black mb-2 ${
+                          <div className={`text-3xl sm:text-4xl font-black mb-2 ${
                             isDarkMode ? 'text-emerald-400' : 'text-emerald-600'
                           }`}>
                             {onlineStats.onlineUsers || 0}
                           </div>
-                          <div className={`text-lg font-medium ${
+                          <div className={`text-base sm:text-lg font-medium ${
                             isDarkMode ? 'text-slate-400' : 'text-slate-600'
                           }`}>People Online Now</div>
                         </div>
                       </div>
                       
                       <div className="flex justify-center">
-                        <div className="animate-spin rounded-full h-16 w-16 border-4 border-transparent border-t-white border-r-white/50"></div>
+                        <div className="animate-spin rounded-full h-12 w-12 sm:h-16 sm:w-16 border-4 border-transparent border-t-white border-r-white/50"></div>
                       </div>
                     </div>
                   )}

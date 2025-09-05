@@ -462,18 +462,18 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
   return (
     <div className="h-full w-full flex flex-col bg-black">
       {/* Minimalist Header */}
-      <div className="flex items-center justify-center p-2 sm:p-4 border-b border-gray-800 flex-shrink-0">
+      <div className="flex items-center justify-center p-3 sm:p-4 md:p-5 border-b border-gray-800 flex-shrink-0">
         <div className="flex items-center space-x-2 sm:space-x-3">
           <div className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-green-500 animate-pulse flex-shrink-0"></div>
           <div>
-            <span className="text-white font-medium text-xs sm:text-base">You're now chatting with a random stranger</span>
+            <span className="text-white font-medium text-xs sm:text-sm md:text-base">You're now chatting with a random stranger</span>
           </div>
         </div>
       </div>
 
       {/* Chat Messages Area */}
-      <div className={`flex-1 overflow-y-auto px-2 sm:px-4 pb-6 sm:pb-8 space-y-3 min-h-0 ${
-        messages.length > 0 ? 'pt-8 sm:pt-12' : 'py-4 sm:py-6'
+      <div className={`flex-1 overflow-y-auto px-3 sm:px-4 md:px-6 pb-6 sm:pb-8 space-y-3 min-h-0 ${
+        messages.length > 0 ? 'pt-6 sm:pt-8 md:pt-12' : 'py-4 sm:py-6'
       }`}>
         {messages.length === 0 ? (
           <div className="text-center py-12 sm:py-20">
@@ -487,7 +487,7 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
               key={index}
               className={`flex ${message.from === 'me' ? 'justify-end' : message.from === 'system' ? 'justify-center' : 'justify-start'}`}
             >
-              <div className={`max-w-[85%] sm:max-w-xs lg:max-w-md px-3 py-2 sm:px-4 sm:py-2 rounded-lg ${
+              <div className={`max-w-[90%] sm:max-w-[80%] md:max-w-sm lg:max-w-md xl:max-w-lg px-3 py-2 sm:px-4 sm:py-3 rounded-lg sm:rounded-xl ${
                 message.from === 'me'
                   ? 'bg-blue-600 text-white'
                   : message.from === 'system'
@@ -498,7 +498,7 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
               }`}>
                 {message.from !== 'system' && (
                   <div className={`text-xs sm:text-sm font-medium mb-1 ${
-                    message.from === 'me' ? 'text-black' : 'text-orange-500'
+                    message.from === 'me' ? 'text-blue-100' : 'text-orange-400'
                   }`}>
                     {message.from === 'me' ? 'You' : 'Stranger'}
                   </div>
@@ -514,10 +514,10 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
                   </div>
                 ) : message.from === 'system' && (message.text.includes('You both like:') || message.isSharedInterests) ? (
                   <div className="text-center">
-                    <p className="text-sm font-medium">{message.text}</p>
+                    <p className="text-sm sm:text-base font-medium">{message.text}</p>
                   </div>
                 ) : (
-                <p className="text-sm sm:text-sm break-words">{message.text}</p>
+                <p className="text-sm sm:text-base break-words leading-relaxed">{message.text}</p>
                 )}
               </div>
             </div>
@@ -543,10 +543,10 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Bottom Input Bar - Uhmegle Style */}
-      <div className="bg-black p-2 sm:p-4 border-t border-gray-800 flex-shrink-0">
+      {/* Bottom Input Bar - Responsive */}
+      <div className="bg-black p-3 sm:p-4 md:p-5 border-t border-gray-800 flex-shrink-0">
         <form onSubmit={handleSubmit} className="flex items-center space-x-2 sm:space-x-3">
-          {/* Start Button - Left */}
+          {/* Stop Button - Left */}
           <button
             type="button"
             onClick={handleLeftButtonClick}
@@ -562,29 +562,28 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
             value={inputText}
             onChange={handleInputChange}
             placeholder="Type your message..."
-            className="flex-1 px-3 py-2 sm:px-4 sm:py-3 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 text-xs sm:text-sm min-h-[36px] sm:min-h-[40px]"
+            className="flex-1 px-3 py-2 sm:px-4 sm:py-3 rounded-lg bg-gray-800 border border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 text-sm sm:text-base min-h-[40px] sm:min-h-[44px]"
           />
           
-          {/* GIF and Emoji Buttons - Right */}
+          {/* GIF Button - Right */}
           <button
             type="button"
             onClick={handleGIFClick}
             data-gif-button
-            className="px-2 py-2 sm:px-3 sm:py-3 rounded-lg bg-gray-800 text-white text-xs sm:text-sm hover:bg-gray-700 transition-colors flex-shrink-0 min-w-[40px] sm:min-w-[50px]"
+            className="px-3 py-2 sm:px-4 sm:py-3 rounded-lg bg-gray-800 text-white text-xs sm:text-sm hover:bg-gray-700 transition-colors flex-shrink-0 min-w-[45px] sm:min-w-[55px]"
           >
             GIF
           </button>
           
-          
-          {/* Enter button - visible on both mobile and desktop */}
+          {/* Send button - visible on both mobile and desktop */}
           <button
             type="submit"
             disabled={!inputText.trim()}
-            className="px-2 py-2 sm:px-4 sm:py-3 rounded-lg bg-gray-800 text-white text-xs sm:text-sm hover:bg-gray-700 transition-colors disabled:opacity-50 border border-gray-700 flex-shrink-0 min-w-[50px] sm:min-w-[80px]"
+            className="px-3 py-2 sm:px-4 sm:py-3 rounded-lg bg-gray-800 text-white text-xs sm:text-sm hover:bg-gray-700 transition-colors disabled:opacity-50 border border-gray-700 flex-shrink-0 min-w-[55px] sm:min-w-[80px]"
           >
             <div className="text-center">
               <div className="text-xs sm:text-base font-bold">Send</div>
-              <div className="text-xs text-blue-400">Enter</div>
+              <div className="text-xs text-blue-400 hidden sm:block">Enter</div>
             </div>
           </button>
         </form>
