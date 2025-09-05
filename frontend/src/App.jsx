@@ -215,13 +215,14 @@ function AppContent() {
 
       newSocket.on('paired', ({ partnerId, sharedInterests: interests }) => {
         console.log('Received paired event with partnerId:', partnerId, 'and shared interests:', interests);
+        console.log('Type of interests:', typeof interests, 'Array?', Array.isArray(interests));
         setState(STATES.CHATTING);
         setMessages([]); // Clear previous messages
         setSharedInterests(interests || []); // Store shared interests
         
         // Always add shared interests message to chat if they exist
         // This will show every time users are paired with shared interests
-        if (interests && interests.length > 0) {
+        if (interests && Array.isArray(interests) && interests.length > 0) {
           const interestsText = interests.join(', ');
           const sharedInterestsMessage = { 
             text: `You both like: ${interestsText}`, 
@@ -231,9 +232,9 @@ function AppContent() {
             id: 'shared-interests-msg' // Unique ID for this message type
           };
           setMessages([sharedInterestsMessage]);
-          console.log('Added shared interests message for reconnection:', sharedInterestsMessage);
+          console.log('Added shared interests message:', sharedInterestsMessage);
         } else {
-          console.log('No shared interests found for this pairing');
+          console.log('No shared interests found for this pairing. Interests:', interests);
         }
         
         setIsConnecting(false);

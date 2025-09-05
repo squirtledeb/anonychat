@@ -472,7 +472,9 @@ const ChatBox = ({ messages, onSendMessage, onDisconnect, onNewChat, isDarkMode,
       </div>
 
       {/* Chat Messages Area */}
-      <div className="flex-1 overflow-y-auto px-2 sm:px-4 py-4 sm:py-6 pb-6 sm:pb-8 space-y-3 min-h-0">
+      <div className={`flex-1 overflow-y-auto px-2 sm:px-4 pb-6 sm:pb-8 space-y-3 min-h-0 ${
+        messages.length > 0 ? 'pt-8 sm:pt-12' : 'py-4 sm:py-6'
+      }`}>
         {messages.length === 0 ? (
           <div className="text-center py-12 sm:py-20">
             <div className="text-4xl sm:text-6xl mb-4">💬</div>

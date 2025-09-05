@@ -151,9 +151,11 @@ io.on('connection', (socket) => {
         const waitingUserId = waitingQueue[i];
         const waitingInterests = userInterests[waitingUserId] || [];
         
-        // Calculate interest match score
+        // Calculate interest match score (case-insensitive)
         const sharedInterests = interests.filter(interest => 
-          waitingInterests.includes(interest)
+          waitingInterests.some(waitingInterest => 
+            waitingInterest.toLowerCase() === interest.toLowerCase()
+          )
         );
         const matchScore = sharedInterests.length;
         
@@ -170,9 +172,11 @@ io.on('connection', (socket) => {
         const partnerInterests = userInterests[partnerId] || [];
         
         if (partnerSocket) {
-          // Calculate shared interests
+          // Calculate shared interests (case-insensitive)
           const sharedInterests = interests.filter(interest => 
-            partnerInterests.includes(interest)
+            partnerInterests.some(partnerInterest => 
+              partnerInterest.toLowerCase() === interest.toLowerCase()
+            )
           );
           
           // Create the pairing
@@ -192,6 +196,8 @@ io.on('connection', (socket) => {
           });
           
           console.log(`Users ${userId} and ${partnerId} are now paired with ${sharedInterests.length} shared interests:`, sharedInterests);
+          console.log(`User ${userId} interests:`, interests);
+          console.log(`User ${partnerId} interests:`, partnerInterests);
         } else {
           // Partner socket not found, add current user to queue
           waitingQueue.push(userId);
